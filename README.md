@@ -1,19 +1,19 @@
-# Cloister
+# 🏛️ Cloister
 
 A minimal Alpine-based Docker image with Fish shell for development environments featuring Python, Node.js, TypeScript, Claude Code CLI, git, pipx, and vfox version manager.
 
-## Features
+## ✨ Features
 
-- **Alpine Linux** - Minimal base image (~5MB)
-- **Fish Shell** - Friendly interactive shell with syntax highlighting and autosuggestions
-- **Python 3** with pipx for isolated tool installations
-- **Node.js** with npm (Alpine native)
-- **TypeScript** with ts-node for direct execution
-- **Claude Code CLI** - Anthropic's official CLI for Claude
-- **git** with git-lfs - Version control
-- **vfox** - Universal version manager (pre-configured for Fish)
+- 🏔️ **Alpine Linux** - Minimal base image (~5MB)
+- 🐟 **Fish Shell** - Friendly interactive shell with syntax highlighting and autosuggestions
+- 🐍 **Python 3** with pipx for isolated tool installations
+- 💚 **Node.js** with npm (Alpine native)
+- 🔷 **TypeScript** with ts-node for direct execution
+- 🤖 **Claude Code CLI** - Anthropic's official CLI for Claude
+- 📦 **git** with git-lfs - Version control
+- 🦊 **vfox** - Universal version manager (pre-configured for Fish)
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Pull the image
 
@@ -80,7 +80,7 @@ docker run -it --rm -v $(pwd):/workspace ghcr.io/jogai/cloister:latest ts-node a
 docker run -it --rm ghcr.io/jogai/cloister:latest fish -c "vfox install nodejs@20"
 ```
 
-## Image Variants
+## 📦 Image Variants
 
 ### Full (Default)
 
@@ -100,7 +100,7 @@ Reduced size image with essential tools only:
 docker pull ghcr.io/jogai/cloister:slim
 ```
 
-## Building Locally
+## 🔨 Building Locally
 
 ```bash
 # Build the full image (recommended)
@@ -113,7 +113,7 @@ docker build --target slim -t cloister:slim .
 docker buildx build --platform linux/amd64 --target full -t cloister:full .
 ```
 
-## Fish Shell Features
+## 🐟 Fish Shell Features
 
 The container uses Fish as the default shell with:
 
@@ -143,7 +143,7 @@ If you need bash compatibility for scripts:
 docker run -it --rm ghcr.io/jogai/cloister:latest sh -c "your-bash-script.sh"
 ```
 
-## Tool Versions
+## 🛠️ Tool Versions
 
 | Tool | Version |
 |------|---------|
@@ -156,7 +156,7 @@ docker run -it --rm ghcr.io/jogai/cloister:latest sh -c "your-bash-script.sh"
 | Claude CLI | Latest npm |
 | vfox | 0.6.1 |
 
-## Environment Variables
+## ⚙️ Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -167,7 +167,7 @@ docker run -it --rm ghcr.io/jogai/cloister:latest sh -c "your-bash-script.sh"
 | `VFOX_HOME` | vfox configuration directory | /home/claude/.version-fox |
 | `SHELL` | Default shell | /usr/bin/fish |
 
-## Security
+## 🔒 Security
 
 - Runs as non-root user (`claude` with UID 1000)
 - Minimal Alpine base image (~5MB base)
@@ -175,7 +175,7 @@ docker run -it --rm ghcr.io/jogai/cloister:latest sh -c "your-bash-script.sh"
 - SBOM and provenance attestations included
 - Multi-architecture support (amd64, arm64)
 
-## GitHub Actions Workflow
+## 🔄 GitHub Actions Workflow
 
 The image is automatically built and pushed to GHCR on:
 
@@ -200,7 +200,7 @@ When triggering the workflow manually, you can specify:
 - **build_target**: Choose between `full`, `slim`, or `all`
 - **platforms**: Target `linux/amd64`, `linux/arm64`, or both
 
-## Container Registry
+## 🐙 Container Registry
 
 Images are published to GitHub Container Registry (ghcr.io):
 
@@ -218,6 +218,6 @@ ghcr.io/jogai/cloister:v1.0.0-slim
 ghcr.io/jogai/cloister:sha-abc1234
 ```
 
-## License
+## 📄 License
 
 MIT License
