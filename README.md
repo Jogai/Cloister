@@ -12,7 +12,6 @@ A minimal Alpine-based Docker image with Fish shell for development environments
 - **Claude Code CLI** - Anthropic's official CLI for Claude
 - **git** with git-lfs - Version control
 - **vfox** - Universal version manager (pre-configured for Fish)
-- **pipx** - Install and run Python applications in isolated environments
 
 ## Quick Start
 
@@ -48,6 +47,24 @@ docker run -it --rm \
   -w /workspace \
   ghcr.io/jogai/cloister:latest \
   claude "Help me with this code"
+```
+
+### Use with persistent Claude config
+
+Mount your local Claude configuration to preserve settings, history, and authentication:
+
+```bash
+docker run -it --rm \
+  -v ~/.claude:/home/claude/.claude \
+  -v $(pwd):/workspace \
+  -w /workspace \
+  ghcr.io/jogai/cloister:latest
+```
+
+Or create an alias for convenience:
+
+```bash
+alias cloister='docker run -it --rm -v ~/.claude:/home/claude/.claude -v $(pwd):/workspace -w /workspace ghcr.io/jogai/cloister:latest'
 ```
 
 ### Run a specific command
@@ -134,10 +151,10 @@ docker run -it --rm ghcr.io/jogai/cloister:latest sh -c "your-bash-script.sh"
 | Fish | Alpine package |
 | Node.js | Alpine package |
 | Python | Alpine package |
+| pipx | Alpine package |
 | TypeScript | Latest npm |
 | Claude CLI | Latest npm |
 | vfox | 0.6.1 |
-| pipx | Latest pip |
 
 ## Environment Variables
 
