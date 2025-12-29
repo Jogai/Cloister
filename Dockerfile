@@ -28,9 +28,11 @@ RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then VFOX_ARCH="x86_64"; \
     elif [ "$ARCH" = "aarch64" ]; then VFOX_ARCH="aarch64"; \
     else VFOX_ARCH="$ARCH"; fi && \
-    curl -fsSL "https://github.com/version-fox/vfox/releases/download/v${VFOX_VERSION}/vfox_${VFOX_VERSION}_linux_${VFOX_ARCH}.tar.gz" | \
-    tar -xz && \
-    chmod +x vfox
+    curl -fsSL "https://github.com/version-fox/vfox/releases/download/v${VFOX_VERSION}/vfox_${VFOX_VERSION}_linux_${VFOX_ARCH}.tar.gz" -o vfox.tar.gz && \
+    tar -xzf vfox.tar.gz && \
+    find . -name "vfox" -type f -exec mv {} ./vfox \; && \
+    chmod +x vfox && \
+    rm -f vfox.tar.gz
 
 # =============================================================================
 # Stage 2: Full - Complete development environment (RECOMMENDED)
