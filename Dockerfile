@@ -63,6 +63,7 @@ RUN apk add --no-cache \
     python3 \
     py3-pip \
     py3-virtualenv \
+    pipx \
     # JSON processing
     jq \
     # GPG for verification
@@ -90,10 +91,6 @@ RUN npm install -g \
 # Switch to claude user for remaining setup
 USER claude
 WORKDIR /home/claude
-
-# Install pipx for the claude user
-RUN python3 -m pip install --user --break-system-packages pipx && \
-    python3 -m pipx ensurepath
 
 # Initialize vfox for claude user
 RUN mkdir -p /home/claude/.version-fox
@@ -176,7 +173,8 @@ RUN apk add --no-cache \
     nodejs \
     npm \
     python3 \
-    py3-pip
+    py3-pip \
+    pipx
 
 # Create non-root user with fish shell
 RUN addgroup -g 1000 claude && \
@@ -196,9 +194,6 @@ RUN npm install -g \
 
 # Switch to claude user
 USER claude
-
-# Install pipx
-RUN python3 -m pip install --user --break-system-packages pipx
 
 # Initialize vfox directory
 RUN mkdir -p /home/claude/.version-fox
