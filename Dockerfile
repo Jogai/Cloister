@@ -106,7 +106,6 @@ RUN cat > /home/claude/.config/fish/config.fish << 'FISHEOF'
 # Environment variables
 set -gx PATH /home/claude/.local/bin /usr/local/bin /usr/bin /bin $PATH
 set -gx HOME /home/claude
-set -gx NODE_ENV production
 set -gx PYTHONUNBUFFERED 1
 set -gx PYTHONDONTWRITEBYTECODE 1
 set -gx LANG C.UTF-8
@@ -126,11 +125,11 @@ function fish_greeting
     set_color cyan
     echo "🏛️  Cloister Development Environment"
     set_color normal
-    echo "   Python:     "(python3 --version 2>/dev/null | string replace "Python " "")
-    echo "   Node.js:    "(node --version 2>/dev/null)
-    echo "   npm:        "(npm --version 2>/dev/null)
-    echo "   TypeScript: "(tsc --version 2>/dev/null | string replace "Version " "")
-    echo "   vfox:       "(vfox --version 2>/dev/null | head -1)
+    echo "   Python:     "(python --version 2>/dev/null | string replace -r '^\D*' '')
+    echo "   Node.js:    "(node --version 2>/dev/null | string replace -r '^\D*' '')
+    echo "   npm:        "(npm --version 2>/dev/null | string replace -r '^\D*' '')
+    echo "   TypeScript: "(tsc --version 2>/dev/null | string replace -r '^\D*' '')
+    echo "   vfox:       "(vfox --version 2>/dev/null | head -1 | string replace -r '^\D*' '')
     echo ""
 end
 FISHEOF
@@ -141,7 +140,6 @@ RUN mkdir -p /home/claude/.npm-global
 # Set environment variables (also needed for non-fish invocations)
 ENV PATH="/home/claude/.local/bin:/usr/local/bin:/usr/bin:/bin" \
     HOME="/home/claude" \
-    NODE_ENV="production" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     LANG=C.UTF-8 \
@@ -220,7 +218,6 @@ FISHEOF
 # Environment variables
 ENV PATH="/home/claude/.local/bin:/usr/local/bin:/usr/bin:/bin" \
     HOME="/home/claude" \
-    NODE_ENV="production" \
     PYTHONUNBUFFERED=1 \
     LANG=C.UTF-8 \
     VFOX_HOME="/home/claude/.version-fox" \
