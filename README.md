@@ -15,27 +15,33 @@ A minimal Alpine-based Docker image with Fish shell for development environments
 
 ## 🚀 Quick Start
 
+### Run 
+
+Runs cloister with your exiting authentication and current directory mounted as the workspace.
+```bash
+podman run --userns=keep-id -it --rm -h task007 \
+  -v ~/.claude:/home/claude/.claude \
+  -v ~/.claude.json:/home/claude/.claude.json \
+  -v $(pwd):/workspace \
+  -w /workspace \
+  ghcr.io/jogai/cloister:latest
+```
+
+| Flag | Purpose |
+|------|---------|
+| `--userns=keep-id` | Maps your host UID to the container user, preserving file ownership |
+| `-it` | Interactive mode with the fish terminal |
+| `--rm` | Automatically remove the container when it exits |
+| `-h task007` | Sets the container hostname |
+| `-v ~/.claude:...` | Mounts Claude config directory |
+| `-v ~/.claude.json:...` | Mounts Claude authentication file |
+| `-v $(pwd):/workspace` | Mounts current directory as `/workspace` |
+| `-w /workspace` | Sets the working directory inside the container |
+
 ### Pull the image
 
 ```bash
 docker pull ghcr.io/jogai/cloister:latest
-```
-
-### Run interactively
-
-```bash
-docker run -it --rm ghcr.io/jogai/cloister:latest
-```
-
-You'll be greeted with a Fish shell showing version info for all tools.
-
-### Mount your project
-
-```bash
-docker run -it --rm \
-  -v $(pwd):/workspace \
-  -w /workspace \
-  ghcr.io/jogai/cloister:latest
 ```
 
 ### Use Claude Code CLI
@@ -47,24 +53,6 @@ docker run -it --rm \
   -w /workspace \
   ghcr.io/jogai/cloister:latest \
   claude "Help me with this code"
-```
-
-### Use with persistent Claude config
-
-Mount your local Claude configuration to preserve settings, history, and authentication:
-
-```bash
-docker run -it --rm \
-  -v ~/.claude:/home/claude/.claude \
-  -v $(pwd):/workspace \
-  -w /workspace \
-  ghcr.io/jogai/cloister:latest
-```
-
-Or create an alias for convenience:
-
-```bash
-alias cloister='docker run -it --rm -v ~/.claude:/home/claude/.claude -v $(pwd):/workspace -w /workspace ghcr.io/jogai/cloister:latest'
 ```
 
 ### Run a specific command
