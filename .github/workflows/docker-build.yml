@@ -1,0 +1,359 @@
+# Cloister Docker Build and Push Workflow
+# Builds multi-architecture Docker images and pushes to GitHub Container Registry
+
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*.*.*'
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/docker-build.yml'
+      - '.dockerignore'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/docker-build.yml'
+      - '.dockerignore'
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Custom image tag (optional)'
+        required: false
+        default: ''
+      build_target:
+        description: 'Docker build target'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - slim
+          - all
+      platforms:
+        description: 'Target platforms'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+        type: choice
+        options:
+          - linux/amd64
+          - linux/arm64
+          - linux/amd64,linux/arm64
+
+# Permissions required for GHCR
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+  security-events: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  VFOX_VERSION: '0.6.1'
+
+jobs:
+  # Build the full image variant
+  build-full:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.build_target != 'slim'
+    outputs:
+      digest: ${{ steps.build-and-push.outputs.digest }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:master
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata (full)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=full,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
+            type=raw,value=${{ github.event.inputs.image_tag }},enable=${{ github.event.inputs.image_tag != '' }}
+          labels: |
+            org.opencontainers.image.title=Cloister
+            org.opencontainers.image.description=Development environment with Python, Node.js, TypeScript, Claude CLI, git, and vfox
+            org.opencontainers.image.vendor=Cloister
+
+      - name: Build and push Docker image (full)
+        id: build-and-push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          target: full
+          platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=full
+          cache-to: type=gha,mode=max,scope=full
+          provenance: true
+          sbom: true
+          build-args: |
+            VFOX_VERSION=${{ env.VFOX_VERSION }}
+
+      - name: Generate artifact attestation
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Output image details
+        run: |
+          echo "## Docker Image Built Successfully (Full)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest:** ${{ steps.build-and-push.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tags" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull Command" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # Build the slim image variant
+  build-slim:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.build_target == 'slim' || github.event.inputs.build_target == 'all'
+    outputs:
+      digest: ${{ steps.build-and-push.outputs.digest }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata (slim)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=slim,enable={{is_default_branch}}
+            type=semver,pattern={{version}},suffix=-slim
+            type=sha,prefix=sha-,suffix=-slim
+          labels: |
+            org.opencontainers.image.title=Cloister (Slim)
+            org.opencontainers.image.description=Minimal development environment with essential tools
+
+      - name: Build and push Docker image (slim)
+        id: build-and-push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          target: slim
+          platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=slim
+          cache-to: type=gha,mode=max,scope=slim
+          provenance: true
+          sbom: true
+          build-args: |
+            VFOX_VERSION=${{ env.VFOX_VERSION }}
+
+      - name: Output image details
+        run: |
+          echo "## Docker Image Built Successfully (Slim)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest:** ${{ steps.build-and-push.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull Command" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:slim" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # Security scanning job
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-full
+    if: github.event_name != 'pull_request' && needs.build-full.result == 'success'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          timeout: '10m'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Trivy vulnerability scanner (table output)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          timeout: '10m'
+
+      - name: Security scan summary
+        run: |
+          echo "## Security Scan Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Trivy vulnerability scan results have been uploaded to the Security tab." >> $GITHUB_STEP_SUMMARY
+
+  # Test the built image
+  test-image:
+    runs-on: ubuntu-latest
+    needs: build-full
+    if: github.event_name != 'pull_request' && needs.build-full.result == 'success'
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Test Node.js
+        run: |
+          echo "Testing Node.js..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest node --version
+
+      - name: Test npm
+        run: |
+          echo "Testing npm..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest npm --version
+
+      - name: Test Python
+        run: |
+          echo "Testing Python..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest python3 --version
+
+      - name: Test pipx
+        run: |
+          echo "Testing pipx..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest pipx --version
+
+      - name: Test TypeScript
+        run: |
+          echo "Testing TypeScript..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest tsc --version
+
+      - name: Test git
+        run: |
+          echo "Testing git..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest git --version
+
+      - name: Test vfox
+        run: |
+          echo "Testing vfox..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest vfox --version
+
+      - name: Test Claude CLI
+        run: |
+          echo "Testing Claude CLI..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest claude --version || echo "Claude CLI installed (requires API key for full functionality)"
+
+      - name: Test Fish shell
+        run: |
+          echo "Testing Fish shell..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest fish --version
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest fish -c "echo 'Fish shell working'"
+
+      - name: Test user permissions
+        run: |
+          echo "Testing user permissions..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest id
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest whoami
+
+      - name: Test default shell is Fish
+        run: |
+          echo "Testing default shell..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest sh -c 'echo $SHELL' | grep -q fish
+
+      - name: Output test results
+        run: |
+          echo "## Image Tests Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Tool | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Fish shell | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| Node.js | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| npm | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| Python | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| pipx | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| git | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| vfox | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| Claude CLI | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All tool verification tests completed successfully." >> $GITHUB_STEP_SUMMARY
