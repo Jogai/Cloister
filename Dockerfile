@@ -74,8 +74,10 @@ RUN npm install -g \
     typescript \
     ts-node \
     @types/node \
-    @anthropic-ai/claude-code \
     && npm cache clean --force
+
+# Install Claude Code using native installer
+RUN curl -fsSL https://claude.ai/install.sh | sh
 
 # Switch to claude user for remaining setup
 USER claude
@@ -118,6 +120,7 @@ function fish_greeting
     echo "   Node.js:    "(node --version 2>/dev/null | string replace -r '^\D*' '')
     echo "   npm:        "(npm --version 2>/dev/null | string replace -r '^\D*' '')
     echo "   TypeScript: "(tsc --version 2>/dev/null | string replace -r '^\D*' '')
+    echo "   Claude:     "(claude --version 2>/dev/null | string replace -r '^\D*' '')
     echo "   vfox:       "(vfox --version 2>/dev/null | head -1 | string replace -r '^\D*' '')
     echo ""
 end
@@ -175,9 +178,11 @@ COPY --from=builder /usr/local/bin/vfox /usr/local/bin/vfox
 # Install essential npm packages
 RUN npm install -g \
     typescript \
-    @anthropic-ai/claude-code \
     && npm cache clean --force \
     && rm -rf /root/.npm/_cacache
+
+# Install Claude Code using native installer
+RUN curl -fsSL https://claude.ai/install.sh | sh
 
 # Switch to claude user
 USER claude
