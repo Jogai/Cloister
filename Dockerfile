@@ -27,7 +27,9 @@ RUN curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh
 # =============================================================================
 # Stage 2: Node Builder - Prepare npm packages
 # =============================================================================
-FROM cgr.dev/chainguard/node:latest AS node-builder
+FROM cgr.dev/chainguard/node:latest-dev AS node-builder
+
+USER root
 
 # Install global npm packages
 RUN npm install -g \
