@@ -79,10 +79,10 @@ RUN adduser -D -u 1000 -h /home/monk -s /usr/bin/fish monk && \
 COPY --from=builder /usr/local/bin/vfox /usr/local/bin/vfox
 
 # Copy global npm packages from node-builder
-COPY --from=node-builder /usr/lib/node_modules /usr/lib/node_modules
-RUN ln -sf /usr/lib/node_modules/typescript/bin/tsc /usr/local/bin/tsc && \
-    ln -sf /usr/lib/node_modules/typescript/bin/tsserver /usr/local/bin/tsserver && \
-    ln -sf /usr/lib/node_modules/ts-node/dist/bin.js /usr/local/bin/ts-node
+COPY --from=node-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf /usr/local/lib/node_modules/typescript/bin/tsc /usr/local/bin/tsc && \
+    ln -sf /usr/local/lib/node_modules/typescript/bin/tsserver /usr/local/bin/tsserver && \
+    ln -sf /usr/local/lib/node_modules/ts-node/dist/bin.js /usr/local/bin/ts-node
 
 # Copy Claude CLI from claude-builder and fix ownership
 COPY --from=claude-builder /root/.claude /home/monk/.claude
