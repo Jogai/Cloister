@@ -32,6 +32,7 @@ FROM alpine:latest AS full
 RUN apk add --no-cache \
     # Core utilities
     ca-certificates \
+    bash \
     curl \
     wget \
     # Shell
@@ -157,6 +158,7 @@ FROM alpine:latest AS slim
 # Install only essential runtime dependencies
 RUN apk add --no-cache \
     ca-certificates \
+    bash \
     fish \
     git \
     openssh-client \
