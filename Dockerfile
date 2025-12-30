@@ -10,29 +10,18 @@
 #   docker build --target slim -t cloister:slim .
 
 # =============================================================================
-# Stage 1: Builder - Download vfox
+# Stage 1: Builder - Download vfox using official install script
 # =============================================================================
 FROM alpine:latest AS builder
 
-ARG VFOX_VERSION=0.6.1
-
-# Install build dependencies
+# Install dependencies for install script
 RUN apk add --no-cache \
     ca-certificates \
-    curl
+    curl \
+    bash
 
-WORKDIR /build
-
-# Download vfox based on architecture
-RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then VFOX_ARCH="x86_64"; \
-    elif [ "$ARCH" = "aarch64" ]; then VFOX_ARCH="aarch64"; \
-    else VFOX_ARCH="$ARCH"; fi && \
-    curl -fsSL "https://github.com/version-fox/vfox/releases/download/v${VFOX_VERSION}/vfox_${VFOX_VERSION}_linux_${VFOX_ARCH}.tar.gz" -o vfox.tar.gz && \
-    tar -xzf vfox.tar.gz && \
-    find . -name "vfox" -type f -exec mv {} ./vfox \; && \
-    chmod +x vfox && \
-    rm -f vfox.tar.gz
+# Download vfox using official install script (handles architecture automatically)
+RUN curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash
 
 # =============================================================================
 # Stage 2: Full - Complete development environment (RECOMMENDED)
@@ -77,8 +66,8 @@ RUN addgroup -g 1000 claude && \
     mkdir -p /workspace && \
     chown claude:claude /workspace
 
-# Copy vfox from builder
-COPY --from=builder /build/vfox /usr/local/bin/vfox
+# Copy vfox from builder (installed by official script to /usr/local/bin)
+COPY --from=builder /usr/local/bin/vfox /usr/local/bin/vfox
 
 # Install global npm packages as root (will be available to all users)
 RUN npm install -g \
@@ -180,8 +169,8 @@ RUN addgroup -g 1000 claude && \
     mkdir -p /workspace && \
     chown claude:claude /workspace
 
-# Copy vfox from builder
-COPY --from=builder /build/vfox /usr/local/bin/vfox
+# Copy vfox from builder (installed by official script to /usr/local/bin)
+COPY --from=builder /usr/local/bin/vfox /usr/local/bin/vfox
 
 # Install essential npm packages
 RUN npm install -g \
