@@ -1,109 +1,124 @@
-# Cloister - Alpine-based Development Environment with Fish Shell
-# Multi-stage build for minimal image with development tools
+# Cloister - Distroless Development Environment with Fish Shell
+# Multi-stage build using Chainguard Wolfi for minimal attack surface
 #
-# Build targets:
-#   - full: Complete development environment (default, recommended)
-#   - slim: Reduced size with essential tools only
+# Build:
+#   docker build -t cloister .
 #
-# Usage:
-#   docker build --target full -t cloister:full .
-#   docker build --target slim -t cloister:slim .
+# Features:
+#   - Wolfi-based (distroless-inspired, minimal packages)
+#   - No package manager in final image
+#   - Fish shell, Python, Node.js, TypeScript, Claude CLI, vfox
 
 # =============================================================================
-# Stage 1: Builder - Download vfox using official install script
+# Stage 1: Builder - Compile and prepare all artifacts
 # =============================================================================
-FROM alpine:latest AS builder
+FROM cgr.dev/chainguard/wolfi-base:latest AS builder
 
-# Install dependencies for install script
+# Install build dependencies
 RUN apk add --no-cache \
     ca-certificates \
     curl \
-    bash
+    bash \
+    git
 
-# Download vfox using official install script (handles architecture automatically)
+# Download vfox using official install script
 RUN curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash
 
 # =============================================================================
-# Stage 2: Full - Complete development environment (RECOMMENDED)
+# Stage 2: Node Builder - Prepare npm packages
 # =============================================================================
-FROM alpine:latest AS full
+FROM cgr.dev/chainguard/node:latest AS node-builder
 
-# Install runtime dependencies using Alpine native packages
-RUN apk add --no-cache \
-    # Core utilities
-    ca-certificates \
-    bash \
-    curl \
-    wget \
-    # Shell
-    fish \
-    # Version control
-    git \
-    git-lfs \
-    openssh-client \
-    # Compression tools
-    xz \
-    unzip \
-    tar \
-    gzip \
-    # Node.js and npm (Alpine native - works with musl)
-    nodejs \
-    npm \
-    # Python ecosystem
-    python3 \
-    py3-pip \
-    py3-virtualenv \
-    pipx \
-    # JSON processing
-    jq \
-    # GPG for verification
-    gnupg \
-    # Shadow for user management
-    shadow
-
-# Create non-root user with fish as default shell
-RUN addgroup -g 1000 claude && \
-    adduser -D -u 1000 -G claude -s /usr/bin/fish -h /home/claude claude && \
-    mkdir -p /workspace && \
-    chown claude:claude /workspace
-
-# Copy vfox from builder (installed by official script to /usr/local/bin)
-COPY --from=builder /usr/local/bin/vfox /usr/local/bin/vfox
-
-# Install global npm packages as root (will be available to all users)
+# Install global npm packages
 RUN npm install -g \
     typescript \
     ts-node \
     @types/node \
     && npm cache clean --force
 
-# Install Claude Code using native installer
+# =============================================================================
+# Stage 3: Claude Builder - Install Claude CLI
+# =============================================================================
+FROM cgr.dev/chainguard/wolfi-base:latest AS claude-builder
+
+RUN apk add --no-cache curl bash
+
+# Install Claude Code (creates files in /root/.claude and /usr/local/bin)
 RUN curl -fsSL https://claude.ai/install.sh | sh
 
-# Switch to claude user for remaining setup
-USER claude
-WORKDIR /home/claude
+# =============================================================================
+# Stage 4: Final - Minimal runtime image (distroless-style)
+# =============================================================================
+FROM cgr.dev/chainguard/wolfi-base:latest AS final
 
-# Initialize vfox for claude user
-RUN mkdir -p /home/claude/.version-fox
+# Install only runtime dependencies (no build tools, no curl/wget)
+RUN apk add --no-cache \
+    ca-certificates-bundle \
+    bash \
+    curl \
+    wget \
+    fish \
+    git \
+    git-lfs \
+    openssh-client \
+    xz \
+    unzip \
+    tar \
+    gzip \
+    nodejs \
+    npm \
+    python3 \
+    py3-pip \
+    py3-virtualenv \
+    pipx \
+    jq \
+    gnupg \
+    shadow
+
+# Create non-root user with fish as default shell
+RUN addgroup -g 1000 monk && \
+    adduser -D -u 1000 -G monk -s /usr/bin/fish -h /home/monk monk && \
+    mkdir -p /workspace && \
+    chown monk:monk /workspace
+
+# Copy vfox from builder
+COPY --from=builder /usr/local/bin/vfox /usr/local/bin/vfox
+
+# Copy global npm packages from node-builder
+COPY --from=node-builder /usr/lib/node_modules /usr/lib/node_modules
+RUN ln -sf /usr/lib/node_modules/typescript/bin/tsc /usr/local/bin/tsc && \
+    ln -sf /usr/lib/node_modules/typescript/bin/tsserver /usr/local/bin/tsserver && \
+    ln -sf /usr/lib/node_modules/ts-node/dist/bin.js /usr/local/bin/ts-node
+
+# Copy Claude CLI from claude-builder and fix ownership
+COPY --from=claude-builder /root/.claude /home/monk/.claude
+COPY --from=claude-builder /usr/local/bin/claude /usr/local/bin/claude
+RUN chown -R monk:monk /home/monk/.claude
+
+# Switch to monk user for remaining setup
+USER monk
+WORKDIR /home/monk
+
+# Initialize vfox for monk user
+RUN mkdir -p /home/monk/.version-fox
 
 # Configure fish shell
-RUN mkdir -p /home/claude/.config/fish/conf.d && \
-    mkdir -p /home/claude/.config/fish/functions
+RUN mkdir -p /home/monk/.config/fish/conf.d && \
+    mkdir -p /home/monk/.config/fish/functions
 
 # Create fish config with vfox hook and PATH
-RUN cat > /home/claude/.config/fish/config.fish << 'FISHEOF'
+RUN cat > /home/monk/.config/fish/config.fish << 'FISHEOF'
 # Cloister Fish Configuration
 
 # Environment variables
-set -gx PATH /home/claude/.local/bin /usr/local/bin /usr/bin /bin $PATH
-set -gx HOME /home/claude
+set -gx PATH /home/monk/.local/bin /usr/local/bin /usr/bin /bin $PATH
+set -gx HOME /home/monk
 set -gx PYTHONUNBUFFERED 1
 set -gx PYTHONDONTWRITEBYTECODE 1
 set -gx LANG C.UTF-8
 set -gx LC_ALL C.UTF-8
-set -gx VFOX_HOME /home/claude/.version-fox
-set -gx NPM_CONFIG_PREFIX /home/claude/.npm-global
+set -gx VFOX_HOME /home/monk/.version-fox
+set -gx NPM_CONFIG_PREFIX /home/monk/.npm-global
 
 # Initialize vfox if available
 if type -q vfox
@@ -112,7 +127,7 @@ end
 FISHEOF
 
 # Create fish greeting function
-RUN cat > /home/claude/.config/fish/functions/fish_greeting.fish << 'FISHEOF'
+RUN cat > /home/monk/.config/fish/functions/fish_greeting.fish << 'FISHEOF'
 function fish_greeting
     set_color cyan
     echo "🏛️  Cloister Development Environment"
@@ -128,17 +143,17 @@ end
 FISHEOF
 
 # Create npm global directory for user installations
-RUN mkdir -p /home/claude/.npm-global
+RUN mkdir -p /home/monk/.npm-global
 
-# Set environment variables (also needed for non-fish invocations)
-ENV PATH="/home/claude/.local/bin:/usr/local/bin:/usr/bin:/bin" \
-    HOME="/home/claude" \
+# Set environment variables
+ENV PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin" \
+    HOME="/home/monk" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
-    VFOX_HOME="/home/claude/.version-fox" \
-    NPM_CONFIG_PREFIX="/home/claude/.npm-global" \
+    VFOX_HOME="/home/monk/.version-fox" \
+    NPM_CONFIG_PREFIX="/home/monk/.npm-global" \
     SHELL="/usr/bin/fish"
 
 WORKDIR /workspace
@@ -151,83 +166,10 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 CMD ["/usr/bin/fish"]
 
 # =============================================================================
-# Stage 3: Slim - Minimal image with reduced size
-# =============================================================================
-FROM alpine:latest AS slim
-
-# Install only essential runtime dependencies
-RUN apk add --no-cache \
-    ca-certificates \
-    bash \
-    fish \
-    git \
-    openssh-client \
-    nodejs \
-    npm \
-    python3 \
-    py3-pip \
-    pipx
-
-# Create non-root user with fish shell
-RUN addgroup -g 1000 claude && \
-    adduser -D -u 1000 -G claude -s /usr/bin/fish -h /home/claude claude && \
-    mkdir -p /workspace && \
-    chown claude:claude /workspace
-
-# Copy vfox from builder (installed by official script to /usr/local/bin)
-COPY --from=builder /usr/local/bin/vfox /usr/local/bin/vfox
-
-# Install essential npm packages
-RUN npm install -g \
-    typescript \
-    && npm cache clean --force \
-    && rm -rf /root/.npm/_cacache
-
-# Install Claude Code using native installer
-RUN curl -fsSL https://claude.ai/install.sh | sh
-
-# Switch to claude user
-USER claude
-
-# Initialize vfox directory
-RUN mkdir -p /home/claude/.version-fox
-
-# Configure fish shell
-RUN mkdir -p /home/claude/.config/fish/functions && \
-    cat > /home/claude/.config/fish/config.fish << 'FISHEOF'
-set -gx PATH /home/claude/.local/bin /usr/local/bin /usr/bin /bin $PATH
-set -gx VFOX_HOME /home/claude/.version-fox
-if type -q vfox
-    vfox activate fish | source
-end
-FISHEOF
-
-# Create fish greeting function
-RUN cat > /home/claude/.config/fish/functions/fish_greeting.fish << 'FISHEOF'
-function fish_greeting
-    set_color cyan
-    echo "🏛️  Cloister (slim)"
-    set_color normal
-end
-FISHEOF
-
-# Environment variables
-ENV PATH="/home/claude/.local/bin:/usr/local/bin:/usr/bin:/bin" \
-    HOME="/home/claude" \
-    PYTHONUNBUFFERED=1 \
-    LANG=C.UTF-8 \
-    VFOX_HOME="/home/claude/.version-fox" \
-    SHELL="/usr/bin/fish"
-
-WORKDIR /workspace
-
-CMD ["/usr/bin/fish"]
-
-# =============================================================================
-# OCI Labels (applied to all stages via build args)
+# OCI Labels
 # =============================================================================
 LABEL org.opencontainers.image.title="Cloister" \
-      org.opencontainers.image.description="Alpine-based development environment with Fish shell, Python, Node.js, TypeScript, Claude CLI, git, and vfox" \
+      org.opencontainers.image.description="Distroless development environment with Fish shell, Python, Node.js, TypeScript, Claude CLI, git, and vfox" \
       org.opencontainers.image.vendor="Cloister" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.source="https://github.com/jogai/cloister" \

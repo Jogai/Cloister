@@ -1,13 +1,13 @@
 # 🏛️ Cloister
 
-A minimal Alpine-based Docker image with Fish shell for development environments featuring Python, Node.js, TypeScript, Claude Code CLI, git, pipx, and vfox version manager.
+A distroless Docker image with Fish shell for development environments featuring Python, Node.js, TypeScript, Claude Code CLI, git, and vfox version manager.
 
 ## ✨ Features
 
-- 🏔️ **Alpine Linux** - Minimal base image (~5MB)
+- 🔒 **Distroless** - Chainguard Wolfi base
 - 🐟 **Fish Shell** - Friendly interactive shell with syntax highlighting and autosuggestions
-- 🐍 **Python 3** with pipx for isolated tool installations
-- 💚 **Node.js** with npm (Alpine native)
+- 🐍 **Python 3** with pip
+- 💚 **Node.js** with npm
 - 🔷 **TypeScript** with ts-node for direct execution
 - 🤖 **Claude Code CLI** - Anthropic's official CLI for Claude
 - 📦 **git** with git-lfs - Version control
@@ -17,11 +17,12 @@ A minimal Alpine-based Docker image with Fish shell for development environments
 
 ### Run 
 
-Runs cloister with your exiting authentication and current directory mounted as the workspace.
+Runs cloister with your existing authentication and current directory mounted as the workspace.
 ```bash
-podman run --userns=keep-id -it --rm -h task007 \
-  -v ~/.claude:/home/claude/.claude \
-  -v ~/.claude.json:/home/claude/.claude.json \
+podman run --userns=keep-id -it --rm -h task001 \
+  -v ~/.claude:/home/monk/.claude \
+  -v ~/.claude.json:/home/monk/.claude.json \
+  -v ~/.cache/claude-cli-nodejs/:/home/monk/.cache/claude-cli-nodejs/ \
   -v $(pwd):/workspace \
   -w /workspace \
   ghcr.io/jogai/cloister:latest
@@ -32,9 +33,10 @@ podman run --userns=keep-id -it --rm -h task007 \
 | `--userns=keep-id` | Maps your host UID to the container user, preserving file ownership |
 | `-it` | Interactive mode with the fish terminal |
 | `--rm` | Automatically remove the container when it exits |
-| `-h task007` | Sets the container hostname |
-| `-v ~/.claude:...` | Mounts Claude config directory |
+| `-h task001` | Sets the container hostname (useful for identifying sessions) |
+| `-v ~/.claude:...` | Mounts Claude config directory for persistent settings |
 | `-v ~/.claude.json:...` | Mounts Claude authentication file |
+| `-v ~/.cache/claude-cli-nodejs/:...` | Mounts Claude CLI cache for faster startup and persistent state |
 | `-v $(pwd):/workspace` | Mounts current directory as `/workspace` |
 | `-w /workspace` | Sets the working directory inside the container |
 
@@ -68,37 +70,14 @@ docker run -it --rm -v $(pwd):/workspace ghcr.io/jogai/cloister:latest ts-node a
 docker run -it --rm ghcr.io/jogai/cloister:latest fish -c "vfox install nodejs@20"
 ```
 
-## 📦 Image Variants
-
-### Full (Default)
-
-Based on Alpine with Fish shell, includes all tools with full functionality:
-
-```bash
-docker pull ghcr.io/jogai/cloister:latest
-# or explicitly
-docker pull ghcr.io/jogai/cloister:full
-```
-
-### Slim
-
-Reduced size image with essential tools only:
-
-```bash
-docker pull ghcr.io/jogai/cloister:slim
-```
-
 ## 🔨 Building Locally
 
 ```bash
-# Build the full image (recommended)
-docker build --target full -t cloister:full .
-
-# Build the slim image
-docker build --target slim -t cloister:slim .
+# Build the image
+docker build -t cloister .
 
 # Build for specific architecture
-docker buildx build --platform linux/amd64 --target full -t cloister:full .
+docker buildx build --platform linux/amd64 -t cloister .
 ```
 
 ## 🐟 Fish Shell Features
@@ -113,14 +92,14 @@ The container uses Fish as the default shell with:
 
 ### Fish Configuration
 
-The Fish config is located at `/home/claude/.config/fish/config.fish` and includes:
+The Fish config is located at `/home/monk/.config/fish/config.fish` and includes:
 
 ```fish
 # vfox is auto-activated
 vfox activate fish | source
 
 # All tools are in PATH
-set -gx PATH /home/claude/.local/bin /usr/local/bin /usr/bin /bin $PATH
+set -gx PATH /home/monk/.local/bin /usr/local/bin /usr/bin /bin $PATH
 ```
 
 ### Using Bash Commands
@@ -135,14 +114,13 @@ docker run -it --rm ghcr.io/jogai/cloister:latest sh -c "your-bash-script.sh"
 
 | Tool | Version |
 |------|---------|
-| Alpine | latest |
-| Fish | Alpine package |
-| Node.js | Alpine package |
-| Python | Alpine package |
-| pipx | Alpine package |
+| Wolfi | latest |
+| Fish | Wolfi package |
+| Node.js | Wolfi package |
+| Python | Wolfi package |
 | TypeScript | Latest npm |
-| Claude CLI | Latest npm |
-| vfox | 0.6.1 |
+| Claude Code CLI | Latest |
+| vfox | Latest |
 
 ## ⚙️ Environment Variables
 
@@ -152,13 +130,14 @@ docker run -it --rm ghcr.io/jogai/cloister:latest sh -c "your-bash-script.sh"
 | `NODE_ENV` | Node.js environment | production |
 | `PYTHONUNBUFFERED` | Unbuffered Python output | 1 |
 | `LANG` | System locale | C.UTF-8 |
-| `VFOX_HOME` | vfox configuration directory | /home/claude/.version-fox |
+| `VFOX_HOME` | vfox configuration directory | /home/monk/.version-fox |
 | `SHELL` | Default shell | /usr/bin/fish |
 
 ## 🔒 Security
 
-- Runs as non-root user (`claude` with UID 1000)
-- Minimal Alpine base image (~5MB base)
+- Runs as non-root user (UID 1000)
+- Distroless Wolfi base
+- Minimal attack surface with only runtime dependencies
 - Regular security scanning via Trivy
 - SBOM and provenance attestations included
 - Multi-architecture support (amd64, arm64)
@@ -185,7 +164,6 @@ The image is automatically built and pushed to GHCR on:
 When triggering the workflow manually, you can specify:
 
 - **image_tag**: Custom tag for the image
-- **build_target**: Choose between `full`, `slim`, or `all`
 - **platforms**: Target `linux/amd64`, `linux/arm64`, or both
 
 ## 🐙 Container Registry
@@ -193,14 +171,8 @@ When triggering the workflow manually, you can specify:
 Images are published to GitHub Container Registry (ghcr.io):
 
 ```bash
-# Full image (default)
 ghcr.io/jogai/cloister:latest
-ghcr.io/jogai/cloister:full
 ghcr.io/jogai/cloister:v1.0.0
-
-# Slim image
-ghcr.io/jogai/cloister:slim
-ghcr.io/jogai/cloister:v1.0.0-slim
 
 # SHA-based tags
 ghcr.io/jogai/cloister:sha-abc1234
