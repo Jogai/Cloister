@@ -7,7 +7,7 @@
 # Features:
 #   - Wolfi-based (distroless-inspired, minimal packages)
 #   - No package manager in final image
-#   - Fish shell, Python, Node.js, TypeScript, Claude CLI, vfox
+#   - Fish shell, Python, Node.js, TypeScript, Claude Code CLI, vfox
 
 # =============================================================================
 # Stage 1: Builder - Compile and prepare all artifacts
@@ -25,31 +25,22 @@ RUN apk add --no-cache \
 RUN curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash
 
 # =============================================================================
-# Stage 2: Node Builder - Prepare npm packages
+# Stage 2: Node Builder - Prepare all npm packages
 # =============================================================================
 FROM cgr.dev/chainguard/node:latest-dev AS node-builder
 
 USER root
 
-# Install global npm packages
+# Install all global npm packages in a single layer
 RUN npm install -g \
     typescript \
     ts-node \
     @types/node \
+    @anthropic-ai/claude-code \
     && npm cache clean --force
 
 # =============================================================================
-# Stage 3: Claude Builder - Install Claude CLI
-# =============================================================================
-FROM cgr.dev/chainguard/wolfi-base:latest AS claude-builder
-
-RUN apk add --no-cache curl bash glibc-locale-posix
-
-# Install Claude Code (creates files in /root/.claude and /usr/local/bin)
-RUN curl -fsSL https://claude.ai/install.sh | bash
-
-# =============================================================================
-# Stage 4: Final - Minimal runtime image (distroless-style)
+# Stage 3: Final - Minimal runtime image (distroless-style)
 # =============================================================================
 FROM cgr.dev/chainguard/wolfi-base:latest AS final
 
@@ -78,16 +69,12 @@ RUN adduser -D -u 1000 -h /home/monk -s /usr/bin/fish monk && \
 # Copy vfox from builder
 COPY --from=builder /usr/local/bin/vfox /usr/local/bin/vfox
 
-# Copy global npm packages from node-builder
+# Copy global npm packages from node-builder and create symlinks
 COPY --from=node-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -sf /usr/local/lib/node_modules/typescript/bin/tsc /usr/local/bin/tsc && \
     ln -sf /usr/local/lib/node_modules/typescript/bin/tsserver /usr/local/bin/tsserver && \
-    ln -sf /usr/local/lib/node_modules/ts-node/dist/bin.js /usr/local/bin/ts-node
-
-# Copy Claude CLI from claude-builder and fix ownership
-COPY --from=claude-builder /root/.claude /home/monk/.claude
-RUN chown -R monk:monk /home/monk/.claude && \
-    ln -s /home/monk/.claude/local/bin/claude /usr/local/bin/claude
+    ln -sf /usr/local/lib/node_modules/ts-node/dist/bin.js /usr/local/bin/ts-node && \
+    ln -sf /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js /usr/local/bin/claude
 
 # Switch to monk user for remaining setup
 USER monk
@@ -133,6 +120,11 @@ function fish_greeting
     echo "   Claude:     "(claude --version 2>/dev/null | string replace -r '^\D*' '')
     echo "   vfox:       "(vfox --version 2>/dev/null | head -1 | string replace -r '^\D*' '')
     echo ""
+    set_color brblack
+    echo "   Tip: Run Claude in fully autonomous mode (safe in this isolated container):"
+    set_color normal
+    echo "   claude --dangerously-skip-permissions"
+    echo ""
 end
 FISHEOF
 
@@ -163,7 +155,7 @@ CMD ["/usr/bin/fish"]
 # OCI Labels
 # =============================================================================
 LABEL org.opencontainers.image.title="Cloister" \
-      org.opencontainers.image.description="Distroless development environment with Fish shell, Python, Node.js, TypeScript, Claude CLI, git, and vfox" \
+      org.opencontainers.image.description="Distroless development environment with Fish shell, Python, Node.js, TypeScript, Claude Code CLI, git, and vfox" \
       org.opencontainers.image.vendor="Cloister" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.source="https://github.com/jogai/cloister" \
