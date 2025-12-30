@@ -86,8 +86,8 @@ RUN ln -sf /usr/lib/node_modules/typescript/bin/tsc /usr/local/bin/tsc && \
 
 # Copy Claude CLI from claude-builder and fix ownership
 COPY --from=claude-builder /root/.claude /home/monk/.claude
-COPY --from=claude-builder /usr/local/bin/claude /usr/local/bin/claude
-RUN chown -R monk:monk /home/monk/.claude
+RUN chown -R monk:monk /home/monk/.claude && \
+    ln -s /home/monk/.claude/local/claude /usr/local/bin/claude
 
 # Switch to monk user for remaining setup
 USER monk
