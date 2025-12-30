@@ -51,33 +51,25 @@ RUN curl -fsSL https://claude.ai/install.sh | sh
 # =============================================================================
 FROM cgr.dev/chainguard/wolfi-base:latest AS final
 
-# Install only runtime dependencies (no build tools, no curl/wget)
+# Install only runtime dependencies using Wolfi package names
 RUN apk add --no-cache \
     ca-certificates-bundle \
-    bash \
-    curl \
-    wget \
     fish \
     git \
     git-lfs \
     openssh-client \
     xz \
     unzip \
-    tar \
     gzip \
     nodejs \
     npm \
     python3 \
     py3-pip \
-    py3-virtualenv \
-    pipx \
     jq \
-    gnupg \
-    shadow
+    gnupg
 
 # Create non-root user with fish as default shell
-RUN addgroup -g 1000 monk && \
-    adduser -D -u 1000 -G monk -s /usr/bin/fish -h /home/monk monk && \
+RUN adduser -D -u 1000 -h /home/monk -s /usr/bin/fish monk && \
     mkdir -p /workspace && \
     chown monk:monk /workspace
 
