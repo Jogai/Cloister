@@ -43,10 +43,10 @@ RUN npm install -g \
 # =============================================================================
 FROM cgr.dev/chainguard/wolfi-base:latest AS claude-builder
 
-RUN apk add --no-cache curl bash
+RUN apk add --no-cache curl bash glibc-locale-posix
 
 # Install Claude Code (creates files in /root/.claude and /usr/local/bin)
-RUN curl -fsSL https://claude.ai/install.sh | sh
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
 # =============================================================================
 # Stage 4: Final - Minimal runtime image (distroless-style)
