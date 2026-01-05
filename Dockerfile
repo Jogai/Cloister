@@ -96,6 +96,7 @@ RUN mkdir -p /home/monk/.config/fish/conf.d && \
     mkdir -p /home/monk/.config/fish/completions && \
     mkdir -p /home/monk/.local/share/fish/generated_completions && \
     mkdir -p /home/monk/.local/bin && \
+    mkdir -p /home/monk/.cache && \
     mkdir -p /home/monk/.version-fox
 
 # Create entrypoint script with greeting
@@ -122,18 +123,16 @@ echo "   2) zsh"
 echo "   3) fish"
 printf "Choice [1]: "
 
-# Read with 4 second timeout
-if read -t 4 -l choice
-    switch $choice
-        case 2 zsh
-            exec /bin/zsh
-        case 3 fish
-            exec /usr/bin/fish
-        case '*'
-            exec /usr/local/bin/claude --dangerously-skip-permissions
-    end
+# Read with 4 second timeout (ignore read's exit status)
+set -l choice ""
+read -t 4 choice
+or true
+set choice (string trim -- $choice)
+if test "$choice" = 2 -o "$choice" = zsh
+    exec /bin/zsh
+else if test "$choice" = 3 -o "$choice" = fish
+    exec /usr/bin/fish
 else
-    echo ""
     exec /usr/local/bin/claude --dangerously-skip-permissions
 end
 STARTEOF
@@ -181,6 +180,9 @@ RUN mkdir -p /home/monk/.npm-global
 # Set environment variables
 ENV PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin" \
     HOME="/home/monk" \
+    XDG_DATA_HOME="/home/monk/.local/share" \
+    XDG_CONFIG_HOME="/home/monk/.config" \
+    XDG_CACHE_HOME="/home/monk/.cache" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     LANG=C.UTF-8 \

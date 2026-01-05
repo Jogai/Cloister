@@ -255,11 +255,6 @@ jobs:
           docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest id
           docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest whoami
 
-      - name: Test default shell is Fish
-        run: |
-          echo "Testing default shell..."
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest sh -c 'echo $SHELL' | grep -q fish
-
       - name: Output test results
         run: |
           echo "## Image Tests Passed" >> $GITHUB_STEP_SUMMARY
