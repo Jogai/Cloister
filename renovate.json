@@ -1,0 +1,51 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "schedule": [
+    "* 20 * * mon-fri"
+  ],
+  "timezone": "Europe/Amsterdam",
+  "packageRules": [
+    {
+      "description": "Automerge minor and patch updates",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "Group all npm packages in Dockerfile",
+      "matchDatasources": [
+        "npm"
+      ],
+      "groupName": "npm packages"
+    },
+    {
+      "description": "Group Chainguard base images",
+      "groupName": "chainguard images",
+      "matchPackageNames": [
+        "/^cgr.dev/chainguard//"
+      ]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update npm package versions in Dockerfile ARGs",
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=npm depName=(?<depName>[^\\s]+)\\nARG [A-Z_]+_VERSION=(?<currentValue>\\S+)"
+      ],
+      "datasourceTemplate": "npm"
+    }
+  ]
+}

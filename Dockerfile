@@ -32,11 +32,20 @@ FROM cgr.dev/chainguard/node:latest-dev AS node-builder
 USER root
 
 # Install all global npm packages in a single layer
+# renovate: datasource=npm depName=typescript
+ARG TYPESCRIPT_VERSION=5.7.3
+# renovate: datasource=npm depName=ts-node
+ARG TS_NODE_VERSION=10.9.2
+# renovate: datasource=npm depName=@types/node
+ARG TYPES_NODE_VERSION=25.0.3
+# renovate: datasource=npm depName=@anthropic-ai/claude-code
+ARG CLAUDE_CODE_VERSION=2.0.65
+
 RUN npm install -g \
-    typescript \
-    ts-node \
-    @types/node \
-    @anthropic-ai/claude-code \
+    typescript@${TYPESCRIPT_VERSION} \
+    ts-node@${TS_NODE_VERSION} \
+    @types/node@${TYPES_NODE_VERSION} \
+    @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} \
     && npm cache clean --force
 
 # =============================================================================
