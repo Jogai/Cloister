@@ -123,18 +123,16 @@ echo "   2) zsh"
 echo "   3) fish"
 printf "Choice [1]: "
 
-# Read with 4 second timeout
-if read -t 4 -l choice
-    set choice (string trim $choice)
-    if test "$choice" = "2" -o "$choice" = "zsh"
-        exec /bin/zsh
-    else if test "$choice" = "3" -o "$choice" = "fish"
-        exec /usr/bin/fish
-    else
-        exec /usr/local/bin/claude --dangerously-skip-permissions
-    end
+# Read with 4 second timeout (ignore read's exit status)
+set -l choice ""
+read -t 4 choice
+or true
+set choice (string trim -- $choice)
+if test "$choice" = 2 -o "$choice" = zsh
+    exec /bin/zsh
+else if test "$choice" = 3 -o "$choice" = fish
+    exec /usr/bin/fish
 else
-    echo ""
     exec /usr/local/bin/claude --dangerously-skip-permissions
 end
 STARTEOF
