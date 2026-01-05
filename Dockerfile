@@ -12,7 +12,7 @@
 # =============================================================================
 # Stage 1: Builder - Compile and prepare all artifacts
 # =============================================================================
-FROM cgr.dev/chainguard/wolfi-base:latest AS builder
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:0d8efc73b806c780206b69d62e1b8cb10e9e2eefa0e4452db81b9fa00b1a5175 AS builder
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -27,7 +27,7 @@ RUN curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh
 # =============================================================================
 # Stage 2: Node Builder - Prepare all npm packages
 # =============================================================================
-FROM cgr.dev/chainguard/node:latest-dev AS node-builder
+FROM cgr.dev/chainguard/node:latest-dev@sha256:bead3b22234bc8406318839695d40d57b16694f833f0cd64f5180ed764952e13 AS node-builder
 
 USER root
 
@@ -51,7 +51,7 @@ RUN npm install -g \
 # =============================================================================
 # Stage 3: Final - Minimal runtime image (distroless-style)
 # =============================================================================
-FROM cgr.dev/chainguard/wolfi-base:latest AS final
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:0d8efc73b806c780206b69d62e1b8cb10e9e2eefa0e4452db81b9fa00b1a5175 AS final
 
 # Install only runtime dependencies using Wolfi package names
 RUN apk add --no-cache \
