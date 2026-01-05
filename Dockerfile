@@ -57,6 +57,7 @@ FROM cgr.dev/chainguard/wolfi-base:latest@sha256:0d8efc73b806c780206b69d62e1b8cb
 RUN apk add --no-cache \
     ca-certificates-bundle \
     fish \
+    zsh \
     git \
     git-lfs \
     openssh-client \
@@ -70,8 +71,8 @@ RUN apk add --no-cache \
     jq \
     gnupg
 
-# Create non-root user with fish as default shell
-RUN adduser -D -u 1000 -h /home/monk -s /usr/bin/fish monk && \
+# Create non-root user with zsh as default shell
+RUN adduser -D -u 1000 -h /home/monk -s /bin/zsh monk && \
     mkdir -p /workspace && \
     chown monk:monk /workspace
 
@@ -89,18 +90,35 @@ RUN ln -sf /usr/local/lib/node_modules/typescript/bin/tsc /usr/local/bin/tsc && 
 USER monk
 WORKDIR /home/monk
 
-# Initialize vfox for monk user
-RUN mkdir -p /home/monk/.version-fox
+# Configure user directories
+RUN mkdir -p /home/monk/.config/fish/conf.d && \
+    mkdir -p /home/monk/.config/fish/functions && \
+    mkdir -p /home/monk/.local/bin && \
+    mkdir -p /home/monk/.version-fox
+
+# Create shared greeting script (used by both fish and zsh)
+RUN cat > /home/monk/.local/bin/cloister-greeting << 'GREETEOF'
+#!/usr/bin/fish
+# Cloister greeting - shared between shells
+set_color cyan
+echo "ðŸ›ï¸  Cloister Development Environment"
+set_color normal
+for tool in git:git Python:python Node.js:node npm:npm TypeScript:tsc Claude:claude vfox:vfox fish:fish zsh:zsh
+    set -l parts (string split ':' $tool)
+    printf "   %-11s%s\n" "$parts[1]:" ($parts[2] --version 2>/dev/null | string replace -r '^\D*' '')
+end
+echo ""
+set_color brblack
+echo "   Tip: Run Claude in fully autonomous mode (safe in this isolated container):"
+set_color normal
+echo "   claude --dangerously-skip-permissions"
+echo ""
+GREETEOF
+RUN chmod +x /home/monk/.local/bin/cloister-greeting
 
 # Configure fish shell
-RUN mkdir -p /home/monk/.config/fish/conf.d && \
-    mkdir -p /home/monk/.config/fish/functions
-
-# Create fish config with vfox hook and PATH
 RUN cat > /home/monk/.config/fish/config.fish << 'FISHEOF'
 # Cloister Fish Configuration
-
-# Environment variables
 set -gx PATH /home/monk/.local/bin /usr/local/bin /usr/bin /bin $PATH
 set -gx HOME /home/monk
 set -gx PYTHONUNBUFFERED 1
@@ -116,26 +134,33 @@ if type -q vfox
 end
 FISHEOF
 
-# Create fish greeting function
+# Fish greeting function calls shared script
 RUN cat > /home/monk/.config/fish/functions/fish_greeting.fish << 'FISHEOF'
 function fish_greeting
-    set_color cyan
-    echo "🏛️  Cloister Development Environment"
-    set_color normal
-    echo "   Python:     "(python --version 2>/dev/null | string replace -r '^\D*' '')
-    echo "   Node.js:    "(node --version 2>/dev/null | string replace -r '^\D*' '')
-    echo "   npm:        "(npm --version 2>/dev/null | string replace -r '^\D*' '')
-    echo "   TypeScript: "(tsc --version 2>/dev/null | string replace -r '^\D*' '')
-    echo "   Claude:     "(claude --version 2>/dev/null | string replace -r '^\D*' '')
-    echo "   vfox:       "(vfox --version 2>/dev/null | head -1 | string replace -r '^\D*' '')
-    echo ""
-    set_color brblack
-    echo "   Tip: Run Claude in fully autonomous mode (safe in this isolated container):"
-    set_color normal
-    echo "   claude --dangerously-skip-permissions"
-    echo ""
+    cloister-greeting
 end
 FISHEOF
+
+# Configure zsh shell
+RUN cat > /home/monk/.zshrc << 'ZSHEOF'
+# Cloister Zsh Configuration
+export PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+export HOME="/home/monk"
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+export VFOX_HOME="/home/monk/.version-fox"
+export NPM_CONFIG_PREFIX="/home/monk/.npm-global"
+
+# Initialize vfox if available
+if command -v vfox &> /dev/null; then
+    eval "$(vfox activate zsh)"
+fi
+
+# Greeting
+cloister-greeting
+ZSHEOF
 
 # Create npm global directory for user installations
 RUN mkdir -p /home/monk/.npm-global
@@ -149,7 +174,7 @@ ENV PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin" \
     LC_ALL=C.UTF-8 \
     VFOX_HOME="/home/monk/.version-fox" \
     NPM_CONFIG_PREFIX="/home/monk/.npm-global" \
-    SHELL="/usr/bin/fish"
+    SHELL="/bin/zsh"
 
 WORKDIR /workspace
 
@@ -157,8 +182,8 @@ WORKDIR /workspace
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node --version && python3 --version && git --version
 
-# Default command - fish shell
-CMD ["/usr/bin/fish"]
+# Default command - zsh shell
+CMD ["/bin/zsh"]
 
 # =============================================================================
 # OCI Labels

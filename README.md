@@ -1,17 +1,17 @@
 # 🏛️ Cloister
 
-A distroless Docker image with Fish shell for development environments featuring Python, Node.js, TypeScript, Claude Code CLI, git, and vfox version manager.
+A distroless Docker image for development environments featuring Python, Node.js, TypeScript, Claude Code CLI, git, and vfox version manager.
 
 ## ✨ Features
 
 - 🔒 **Distroless** - Chainguard Wolfi base
-- 🐟 **Fish Shell** - Friendly interactive shell with syntax highlighting and autosuggestions
+- 🐚 **Zsh & Fish** - Modern shells with vfox integration
 - 🐍 **Python 3** with pip
 - 💚 **Node.js** with npm
 - 🔷 **TypeScript** with ts-node for direct execution
 - 🤖 **Claude Code CLI** - Anthropic's official CLI for Claude
 - 📦 **git** with git-lfs - Version control
-- 🦊 **vfox** - Universal version manager (pre-configured for Fish)
+- 🦊 **vfox** - Universal version manager
 
 ## 🚀 Quick Start
 
@@ -31,7 +31,7 @@ podman run --userns=keep-id -it --rm -h task001 \
 | Flag | Purpose |
 |------|---------|
 | `--userns=keep-id` | Maps your host UID to the container user, preserving file ownership |
-| `-it` | Interactive mode with the fish terminal |
+| `-it` | Interactive mode with terminal |
 | `--rm` | Automatically remove the container when it exits |
 | `-h task001` | Sets the container hostname (useful for identifying sessions) |
 | `-v ~/.claude:...` | Mounts Claude config directory for persistent settings |
@@ -65,9 +65,6 @@ docker run -it --rm -v $(pwd):/workspace ghcr.io/jogai/cloister:latest python3 s
 
 # Run TypeScript
 docker run -it --rm -v $(pwd):/workspace ghcr.io/jogai/cloister:latest ts-node app.ts
-
-# Use vfox to install a specific Node version
-docker run -it --rm ghcr.io/jogai/cloister:latest fish -c "vfox install nodejs@20"
 ```
 
 ## 🔨 Building Locally
@@ -80,41 +77,12 @@ docker build -t cloister .
 docker buildx build --platform linux/amd64 -t cloister .
 ```
 
-## 🐟 Fish Shell Features
-
-The container uses Fish as the default shell with:
-
-- **Welcome message** showing Python, Node.js, and TypeScript versions
-- **vfox integration** - Automatically activated for version management
-- **Syntax highlighting** - Built-in command highlighting
-- **Autosuggestions** - Fish suggests commands as you type
-- **Tab completion** - Smart completions for commands and paths
-
-### Fish Configuration
-
-The Fish config is located at `/home/monk/.config/fish/config.fish` and includes:
-
-```fish
-# vfox is auto-activated
-vfox activate fish | source
-
-# All tools are in PATH
-set -gx PATH /home/monk/.local/bin /usr/local/bin /usr/bin /bin $PATH
-```
-
-### Using Bash Commands
-
-If you need bash compatibility for scripts:
-
-```bash
-docker run -it --rm ghcr.io/jogai/cloister:latest sh -c "your-bash-script.sh"
-```
-
 ## 🛠️ Tool Versions
 
 | Tool | Version |
 |------|---------|
 | Wolfi | latest |
+| Zsh | Wolfi package |
 | Fish | Wolfi package |
 | Node.js | Wolfi package |
 | Python | Wolfi package |
@@ -131,7 +99,7 @@ docker run -it --rm ghcr.io/jogai/cloister:latest sh -c "your-bash-script.sh"
 | `PYTHONUNBUFFERED` | Unbuffered Python output | 1 |
 | `LANG` | System locale | C.UTF-8 |
 | `VFOX_HOME` | vfox configuration directory | /home/monk/.version-fox |
-| `SHELL` | Default shell | /usr/bin/fish |
+| `SHELL` | Default shell | /bin/zsh |
 
 ## 🔒 Security
 
