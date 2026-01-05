@@ -93,28 +93,51 @@ WORKDIR /home/monk
 # Configure user directories
 RUN mkdir -p /home/monk/.config/fish/conf.d && \
     mkdir -p /home/monk/.config/fish/functions && \
+    mkdir -p /home/monk/.config/fish/completions && \
+    mkdir -p /home/monk/.local/share/fish/generated_completions && \
     mkdir -p /home/monk/.local/bin && \
     mkdir -p /home/monk/.version-fox
 
-# Create shared greeting script (used by both fish and zsh)
-RUN cat > /home/monk/.local/bin/cloister-greeting << 'GREETEOF'
+# Create entrypoint script with greeting
+RUN cat > /home/monk/.local/bin/cloister-start << 'STARTEOF'
 #!/usr/bin/fish
-# Cloister greeting - shared between shells
+# Cloister entrypoint - greeting and shell/claude selection
+
+# Greeting
 set_color cyan
-echo "ðŸ›ï¸  Cloister Development Environment"
+echo "🏛  Cloister Development Environment"
 set_color normal
 for tool in git:git Python:python Node.js:node npm:npm TypeScript:tsc Claude:claude vfox:vfox fish:fish zsh:zsh
     set -l parts (string split ':' $tool)
     printf "   %-11s%s\n" "$parts[1]:" ($parts[2] --version 2>/dev/null | string replace -r '^\D*' '')
 end
 echo ""
-set_color brblack
-echo "   Tip: Run Claude in fully autonomous mode (safe in this isolated container):"
+
+# Selection prompt
+set_color cyan
+echo "Select:"
 set_color normal
-echo "   claude --dangerously-skip-permissions"
-echo ""
-GREETEOF
-RUN chmod +x /home/monk/.local/bin/cloister-greeting
+echo "   1) claude (default)"
+echo "   2) zsh"
+echo "   3) fish"
+printf "Choice [1]: "
+
+# Read with 4 second timeout
+if read -t 4 -l choice
+    switch $choice
+        case 2 zsh
+            exec /bin/zsh
+        case 3 fish
+            exec /usr/bin/fish
+        case '*'
+            exec /usr/local/bin/claude --dangerously-skip-permissions
+    end
+else
+    echo ""
+    exec /usr/local/bin/claude --dangerously-skip-permissions
+end
+STARTEOF
+RUN chmod +x /home/monk/.local/bin/cloister-start
 
 # Configure fish shell
 RUN cat > /home/monk/.config/fish/config.fish << 'FISHEOF'
@@ -134,13 +157,6 @@ if type -q vfox
 end
 FISHEOF
 
-# Fish greeting function calls shared script
-RUN cat > /home/monk/.config/fish/functions/fish_greeting.fish << 'FISHEOF'
-function fish_greeting
-    cloister-greeting
-end
-FISHEOF
-
 # Configure zsh shell
 RUN cat > /home/monk/.zshrc << 'ZSHEOF'
 # Cloister Zsh Configuration
@@ -157,9 +173,6 @@ export NPM_CONFIG_PREFIX="/home/monk/.npm-global"
 if command -v vfox &> /dev/null; then
     eval "$(vfox activate zsh)"
 fi
-
-# Greeting
-cloister-greeting
 ZSHEOF
 
 # Create npm global directory for user installations
@@ -182,8 +195,8 @@ WORKDIR /workspace
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node --version && python3 --version && git --version
 
-# Default command - zsh shell
-CMD ["/bin/zsh"]
+# Default command - entrypoint with selection (4s timeout, defaults to claude)
+CMD ["/home/monk/.local/bin/cloister-start"]
 
 # =============================================================================
 # OCI Labels
