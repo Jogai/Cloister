@@ -125,13 +125,13 @@ printf "Choice [1]: "
 
 # Read with 4 second timeout
 if read -t 4 -l choice
-    switch $choice
-        case 1 claude ""
-            exec /usr/local/bin/claude --dangerously-skip-permissions
-        case 2 zsh
-            exec /bin/zsh
-        case 3 fish
-            exec /usr/bin/fish
+    set choice (string trim $choice)
+    if test "$choice" = "2" -o "$choice" = "zsh"
+        exec /bin/zsh
+    else if test "$choice" = "3" -o "$choice" = "fish"
+        exec /usr/bin/fish
+    else
+        exec /usr/local/bin/claude --dangerously-skip-permissions
     end
 else
     echo ""
