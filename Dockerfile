@@ -39,7 +39,7 @@ ARG TS_NODE_VERSION=10.9.2
 # renovate: datasource=npm depName=@types/node
 ARG TYPES_NODE_VERSION=25.0.3
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION=2.0.76
+ARG CLAUDE_CODE_VERSION=2.1.2
 
 RUN npm install -g \
     typescript@${TYPESCRIPT_VERSION} \
