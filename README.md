@@ -11,6 +11,7 @@ A distroless Docker image for development environments featuring Python, Node.js
 - 🔷 **TypeScript** with ts-node for direct execution
 - 🤖 **Claude Code CLI** - Anthropic's official CLI for Claude
 - 📦 **git** with git-lfs - Version control
+- 🦥 **lazygit** - Terminal UI for git
 - 🦊 **vfox** - Universal version manager
 
 ## 🚀 Quick Start
@@ -88,6 +89,7 @@ docker buildx build --platform linux/amd64 -t cloister .
 | Python | Wolfi package |
 | TypeScript | Latest npm |
 | Claude Code CLI | Latest |
+| lazygit | Wolfi package |
 | vfox | Latest |
 
 ## ⚙️ Environment Variables

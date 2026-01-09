@@ -69,10 +69,12 @@ RUN apk add --no-cache \
     python3 \
     py3-pip \
     jq \
-    gnupg
+    gnupg \
+    curl \
+    lazygit
 
-# Create non-root user with zsh as default shell
-RUN adduser -D -u 1000 -h /home/monk -s /bin/zsh monk && \
+# Create non-root user with sh as default shell
+RUN adduser -D -u 1000 -h /home/monk -s /bin/sh monk && \
     mkdir -p /workspace && \
     chown monk:monk /workspace
 
@@ -102,7 +104,7 @@ RUN mkdir -p /home/monk/.config/fish/conf.d && \
 # Create entrypoint script with greeting
 RUN cat > /home/monk/.local/bin/cloister-start << 'STARTEOF'
 #!/usr/bin/fish
-# Cloister entrypoint - greeting and shell/claude selection
+# Cloister entrypoint
 
 # Greeting
 set_color cyan
@@ -114,27 +116,21 @@ for tool in git:git Python:python Node.js:node npm:npm TypeScript:tsc Claude:cla
 end
 echo ""
 
-# Selection prompt
-set_color cyan
-echo "Select:"
+# Usage instructions
+set_color brblack
+echo "Available shells:"
 set_color normal
-echo "   1) claude (default)"
-echo "   2) zsh"
-echo "   3) fish"
-printf "Choice [1]: "
+echo "   zsh      - Z shell"
+echo "   fish     - Fish shell"
+echo ""
+set_color brblack
+echo "Start Claude Code CLI:"
+set_color normal
+echo "   claude --dangerously-skip-permissions"
+echo ""
 
-# Read with 4 second timeout (ignore read's exit status)
-set -l choice ""
-read -t 4 choice
-or true
-set choice (string trim -- $choice)
-if test "$choice" = 2 -o "$choice" = zsh
-    exec /bin/zsh
-else if test "$choice" = 3 -o "$choice" = fish
-    exec /usr/bin/fish
-else
-    exec /usr/local/bin/claude --dangerously-skip-permissions
-end
+# Start default shell
+exec /bin/sh
 STARTEOF
 RUN chmod +x /home/monk/.local/bin/cloister-start
 
@@ -197,7 +193,7 @@ WORKDIR /workspace
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node --version && python3 --version && git --version
 
-# Default command - entrypoint with selection (4s timeout, defaults to claude)
+# Default command - entrypoint
 CMD ["/home/monk/.local/bin/cloister-start"]
 
 # =============================================================================
