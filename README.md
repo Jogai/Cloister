@@ -6,6 +6,7 @@ A distroless Docker image for development environments featuring Python, Node.js
 
 - 🔒 **Distroless** - Chainguard Wolfi base
 - 🐚 **Zsh & Fish** - Modern shells with vfox integration
+- 🪟 **Zellij** - Terminal multiplexer
 - 🐍 **Python 3** with pip
 - 💚 **Node.js** with npm
 - 🔷 **TypeScript** with ts-node for direct execution
@@ -85,6 +86,7 @@ docker buildx build --platform linux/amd64 -t cloister .
 | Wolfi | latest |
 | Zsh | Wolfi package |
 | Fish | Wolfi package |
+| Zellij | Latest |
 | Node.js | Wolfi package |
 | Python | Wolfi package |
 | TypeScript | Latest npm |

@@ -21,8 +21,17 @@ RUN apk add --no-cache \
     bash \
     git
 
-# Download vfox using official install script
-RUN curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash
+# renovate: datasource=github-releases depName=version-fox/vfox
+ARG VFOX_VERSION=0.10.0
+
+# renovate: datasource=github-releases depName=zellij-org/zellij
+ARG ZELLIJ_VERSION=0.43.1
+
+# Download zellij and vfox binaries
+RUN mkdir -p /usr/local/bin && \
+    ARCH=$(uname -m) && \
+    curl -fsSL "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-musl.tar.gz" | tar -xz -C /usr/local/bin && \
+    curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash
 
 # =============================================================================
 # Stage 2: Node Builder - Prepare all npm packages
@@ -56,30 +65,33 @@ FROM cgr.dev/chainguard/wolfi-base:latest@sha256:0d8efc73b806c780206b69d62e1b8cb
 # Install only runtime dependencies using Wolfi package names
 RUN apk add --no-cache \
     ca-certificates-bundle \
+    curl \
+    wget \
     fish \
     zsh \
     git \
     git-lfs \
-    openssh-client \
+    lazygit \
+    gnupg \
     xz \
-    unzip \
     gzip \
+    unzip \
+    jq \
+    less \
     nodejs \
     npm \
-    python3 \
+    openssh-client \
     py3-pip \
-    jq \
-    gnupg \
-    curl \
-    lazygit
+    python3 \
+    tree
 
 # Create non-root user with sh as default shell
 RUN adduser -D -u 1000 -h /home/monk -s /bin/sh monk && \
     mkdir -p /workspace && \
     chown monk:monk /workspace
 
-# Copy vfox from builder
-COPY --from=builder /usr/local/bin/vfox /usr/local/bin/vfox
+# Copy vfox and zellij from builder
+COPY --from=builder /usr/local/bin/vfox /usr/local/bin/zellij /usr/local/bin/
 
 # Copy global npm packages from node-builder and create symlinks
 COPY --from=node-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
@@ -99,33 +111,46 @@ RUN mkdir -p /home/monk/.config/fish/conf.d && \
     mkdir -p /home/monk/.local/share/fish/generated_completions && \
     mkdir -p /home/monk/.local/bin && \
     mkdir -p /home/monk/.cache && \
-    mkdir -p /home/monk/.version-fox
+    mkdir -p /home/monk/.version-fox && \
+    mkdir -p /home/monk/.zsh-completions
 
-# Create entrypoint script with greeting
+# Generate shell completions for zellij and vfox
+RUN zellij setup --generate-completion fish > /home/monk/.config/fish/completions/zellij.fish && \
+    zellij setup --generate-completion zsh > /home/monk/.zsh-completions/_zellij && \
+    vfox completion fish > /home/monk/.config/fish/completions/vfox.fish && \
+    vfox completion zsh > /home/monk/.zsh-completions/_vfox
+
+# Create entrypoint script with greeting (POSIX sh)
 RUN cat > /home/monk/.local/bin/cloister-start << 'STARTEOF'
-#!/usr/bin/fish
+#!/bin/sh
 # Cloister entrypoint
 
+# ANSI color codes
+CYAN='\033[0;36m'
+GRAY='\033[0;90m'
+NC='\033[0m'
+
 # Greeting
-set_color cyan
-echo "🏛  Cloister Development Environment"
-set_color normal
-for tool in git:git Python:python Node.js:node npm:npm TypeScript:tsc Claude:claude vfox:vfox fish:fish zsh:zsh
-    set -l parts (string split ':' $tool)
-    printf "   %-11s%s\n" "$parts[1]:" ($parts[2] --version 2>/dev/null | string replace -r '^\D*' '')
-end
+printf "${CYAN}🏛  Cloister Development Environment${NC}\n"
+
+# Print tool versions
+for tool in "Git:git" "Python:python" "Node.js:node" "npm:npm" "TypeScript:tsc" "Claude:claude" "vfox:vfox" "Zellij:zellij" "Fish:fish" "Zsh:zsh"; do
+    name="${tool%%:*}"
+    cmd="${tool#*:}"
+    version=$($cmd --version 2>/dev/null | sed 's/^[^0-9]*//' | head -n1)
+    printf "   %-11s%s\n" "$name:" "$version"
+done
 echo ""
 
 # Usage instructions
-set_color brblack
-echo "Available shells:"
-set_color normal
-echo "   zsh      - Z shell"
-echo "   fish     - Fish shell"
+printf "${GRAY}Available shells:${NC}\n"
+echo "   zsh      - Powerful shell with great plugin ecosystem"
+echo "   fish     - Friendly shell with autosuggestions"
 echo ""
-set_color brblack
-echo "Start Claude Code CLI:"
-set_color normal
+printf "${GRAY}Terminal multiplexer:${NC}\n"
+echo "   zellij   - Split panes, run Claude, fish, and zsh all at once"
+echo ""
+printf "${GRAY}AI assistant:${NC}\n"
 echo "   claude --dangerously-skip-permissions"
 echo ""
 
@@ -168,6 +193,10 @@ export NPM_CONFIG_PREFIX="/home/monk/.npm-global"
 if command -v vfox &> /dev/null; then
     eval "$(vfox activate zsh)"
 fi
+
+# Zellij completions
+fpath=(~/.zsh-completions $fpath)
+autoload -Uz compinit && compinit
 ZSHEOF
 
 # Create npm global directory for user installations
@@ -185,13 +214,9 @@ ENV PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin" \
     LC_ALL=C.UTF-8 \
     VFOX_HOME="/home/monk/.version-fox" \
     NPM_CONFIG_PREFIX="/home/monk/.npm-global" \
-    SHELL="/bin/zsh"
+    SHELL="/bin/sh"
 
 WORKDIR /workspace
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node --version && python3 --version && git --version
 
 # Default command - entrypoint
 CMD ["/home/monk/.local/bin/cloister-start"]

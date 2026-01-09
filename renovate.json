@@ -46,6 +46,17 @@
         "# renovate: datasource=npm depName=(?<depName>[^\\s]+)\\nARG [A-Z_]+_VERSION=(?<currentValue>\\S+)"
       ],
       "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "Update GitHub releases versions in Dockerfile ARGs",
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=github-releases depName=(?<depName>[^\\s]+)\\nARG [A-Z_]+_VERSION=(?<currentValue>\\S+)"
+      ],
+      "datasourceTemplate": "github-releases"
     }
   ]
 }
