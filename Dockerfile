@@ -22,7 +22,7 @@ RUN apk add --no-cache \
     git
 
 # renovate: datasource=github-releases depName=version-fox/vfox
-ARG VFOX_VERSION=0.10.0
+ARG VFOX_VERSION=1.0.2
 
 # renovate: datasource=github-releases depName=zellij-org/zellij
 ARG ZELLIJ_VERSION=0.43.1
