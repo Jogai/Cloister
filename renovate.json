@@ -8,9 +8,10 @@
     "dependencies"
   ],
   "schedule": [
-    "* 20 * * mon-fri"
+    "* 17 * * mon-fri"
   ],
   "timezone": "Europe/Amsterdam",
+  "platformAutomerge": true,
   "packageRules": [
     {
       "description": "Automerge minor and patch updates",
