@@ -36,7 +36,7 @@ RUN mkdir -p /usr/local/bin && \
 # =============================================================================
 # Stage 2: Node Builder - Prepare all npm packages
 # =============================================================================
-FROM cgr.dev/chainguard/node:latest-dev@sha256:df6f7f8b8e0abb66324395ff52259c081f750c9f6c987cffc6e45a1212a69fa3 AS node-builder
+FROM cgr.dev/chainguard/node:latest-dev@sha256:4298f1095366f7bf7d847b0373f404439b75e1543cfeea960264525bd9f167d2 AS node-builder
 
 USER root
 
