@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="_134382ba-74a7-4c15-bef5-86bfdfaaf1b0.jpeg" alt="Cloister" />
+</p>
+
 # 🏛️ Cloister
 
 A distroless Docker image for development environments featuring Python, Node.js, TypeScript, Claude Code CLI, git, and vfox version manager.
