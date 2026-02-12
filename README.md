@@ -43,7 +43,7 @@ podman run --userns=keep-id -it --rm -h task001 \
 | `-v ~/.claude:...` | Mounts Claude config directory for persistent settings |
 | `-v ~/.claude.json:...` | Mounts Claude authentication file |
 | `-v ~/.cache/claude-cli-nodejs/:...` | Mounts Claude CLI cache for faster startup and persistent state |
-| `-v $(pwd):/workspace` | Mounts current directory as `/workspace` |
+| `-v $(pwd):/workspace/my-claude-project` | Mounts current directory as (the subfolder is to make resuming sessions easier) `/workspace/my-claude-project` |
 | `-w /workspace` | Sets the working directory inside the container |
 
 ### Pull the image
