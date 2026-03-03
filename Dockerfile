@@ -12,7 +12,7 @@
 # =============================================================================
 # Stage 1: Builder - Compile and prepare all artifacts
 # =============================================================================
-FROM cgr.dev/chainguard/wolfi-base:latest@sha256:9925d3017788558fa8f27e8bb160b791e56202b60c91fbcc5c867de3175986c8 AS builder
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:c11fcfc9f7497a947c2e1fa5d7b5171c0b6985d4f7fb1fcc68eaf1a62c76d048 AS builder
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -36,7 +36,7 @@ RUN mkdir -p /usr/local/bin && \
 # =============================================================================
 # Stage 2: Node Builder - Prepare all npm packages
 # =============================================================================
-FROM cgr.dev/chainguard/node:latest-dev@sha256:04bd793c494143c5eeec6d71264243a53194ed43eb65ef012fb55975d84e1e9b AS node-builder
+FROM cgr.dev/chainguard/node:latest-dev@sha256:03728012383d61b1e53296bfb26ec03eb0f89217370712d50a22ba521399b7a1 AS node-builder
 
 USER root
 
@@ -58,7 +58,7 @@ RUN npm install -g \
 # =============================================================================
 # Stage 3: Final - Minimal runtime image (distroless-style)
 # =============================================================================
-FROM cgr.dev/chainguard/wolfi-base:latest@sha256:9925d3017788558fa8f27e8bb160b791e56202b60c91fbcc5c867de3175986c8 AS final
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:c11fcfc9f7497a947c2e1fa5d7b5171c0b6985d4f7fb1fcc68eaf1a62c76d048 AS final
 
 # Install only runtime dependencies using Wolfi package names
 RUN apk add --no-cache \
