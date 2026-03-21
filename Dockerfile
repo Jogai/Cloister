@@ -21,7 +21,7 @@ ARG VFOX_VERSION=1.0.6
 ARG ZELLIJ_VERSION=0.43.1
 
 # renovate: datasource=github-releases depName=jesseduffield/lazygit
-ARG LAZYGIT_VERSION=0.51.1
+ARG LAZYGIT_VERSION=0.60.0
 
 # renovate: datasource=github-releases depName=fish-shell/fish-shell
 ARG FISH_VERSION=4.5.0
