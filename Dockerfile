@@ -1,7 +1,9 @@
 # =============================================================================
-# Stage 1: Builder - Compile and prepare all artifacts
+# Stage 1: Builder - Prepare all artifacts
 # =============================================================================
-FROM cgr.dev/chainguard/wolfi-base:latest@sha256:73de6aadd7e28fb516fa1270fcb411b94ee79949635e7de2a4bdb8705f6c120c AS builder
+FROM cgr.dev/chainguard/node:latest-dev@sha256:8e17971db461cd77228a693db4e25f15105f73c664fc8886c360cbc76428eff0 AS builder
+
+USER root
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -20,6 +22,11 @@ ARG ZELLIJ_VERSION=0.43.1
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
 ARG CLAUDE_CODE_VERSION=2.1.81
 
+# renovate: datasource=npm depName=typescript
+ARG TYPESCRIPT_VERSION=5.9.3
+# renovate: datasource=npm depName=ts-node
+ARG TS_NODE_VERSION=10.9.2
+
 # Download zellij, vfox, and claude binaries
 ARG TARGETARCH
 RUN mkdir -p /usr/local/bin && \
@@ -34,19 +41,7 @@ RUN mkdir -p /usr/local/bin && \
     [ "$ACTUAL" = "$CHECKSUM" ] || { echo "Checksum verification failed"; exit 1; } && \
     chmod +x /usr/local/bin/claude
 
-# =============================================================================
-# Stage 2: Node Builder - Prepare all npm packages
-# =============================================================================
-FROM cgr.dev/chainguard/node:latest-dev@sha256:8e17971db461cd77228a693db4e25f15105f73c664fc8886c360cbc76428eff0 AS node-builder
-
-USER root
-
-# Install all global npm packages in a single layer
-# renovate: datasource=npm depName=typescript
-ARG TYPESCRIPT_VERSION=5.9.3
-# renovate: datasource=npm depName=ts-node
-ARG TS_NODE_VERSION=10.9.2
-
+# Install global npm packages
 RUN npm install -g \
     typescript@${TYPESCRIPT_VERSION} \
     ts-node@${TS_NODE_VERSION} \
@@ -54,7 +49,7 @@ RUN npm install -g \
     && npm cache clean --force
 
 # =============================================================================
-# Stage 3: Final - Minimal runtime image (distroless-style)
+# Stage 2: Final - Minimal runtime image (distroless-style)
 # =============================================================================
 FROM cgr.dev/chainguard/wolfi-base:latest@sha256:73de6aadd7e28fb516fa1270fcb411b94ee79949635e7de2a4bdb8705f6c120c AS final
 
@@ -90,8 +85,8 @@ RUN adduser -D -u 1000 -h /home/monk -s /bin/sh monk && \
 # Copy vfox, zellij, and claude from builder
 COPY --from=builder /usr/local/bin/vfox /usr/local/bin/zellij /usr/local/bin/claude /usr/local/bin/
 
-# Copy global npm packages from node-builder and create symlinks
-COPY --from=node-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
+# Copy global npm packages from builder and create symlinks
+COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -sf /usr/local/lib/node_modules/typescript/bin/tsc /usr/local/bin/tsc && \
     ln -sf /usr/local/lib/node_modules/typescript/bin/tsserver /usr/local/bin/tsserver && \
     ln -sf /usr/local/lib/node_modules/ts-node/dist/bin.js /usr/local/bin/ts-node
