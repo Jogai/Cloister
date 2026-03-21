@@ -95,7 +95,7 @@ jobs:
             type=raw,value=${{ github.event.inputs.image_tag }},enable=${{ github.event.inputs.image_tag != '' }}
           labels: |
             org.opencontainers.image.title=Cloister
-            org.opencontainers.image.description=Distroless development environment with Fish shell, Python, Node.js, TypeScript, Claude Code CLI, git, and vfox
+            org.opencontainers.image.description=Distroless development environment with Fish shell, Node.js, TypeScript, Claude Code CLI, git, and vfox
             org.opencontainers.image.vendor=Cloister
 
       - name: Build and push Docker image
@@ -218,11 +218,6 @@ jobs:
           echo "Testing npm..."
           docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest npm --version
 
-      - name: Test Python
-        run: |
-          echo "Testing Python..."
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest python3 --version
-
       - name: Test TypeScript
         run: |
           echo "Testing TypeScript..."
@@ -264,7 +259,6 @@ jobs:
           echo "| Fish shell | OK |" >> $GITHUB_STEP_SUMMARY
           echo "| Node.js | OK |" >> $GITHUB_STEP_SUMMARY
           echo "| npm | OK |" >> $GITHUB_STEP_SUMMARY
-          echo "| Python | OK |" >> $GITHUB_STEP_SUMMARY
           echo "| TypeScript | OK |" >> $GITHUB_STEP_SUMMARY
           echo "| git | OK |" >> $GITHUB_STEP_SUMMARY
           echo "| vfox | OK |" >> $GITHUB_STEP_SUMMARY

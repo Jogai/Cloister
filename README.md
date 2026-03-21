@@ -4,14 +4,13 @@
 
 # 🏛️ Cloister
 
-A distroless Docker image for development environments featuring Python, Node.js, TypeScript, Claude Code CLI, git, and vfox version manager.
+A distroless Docker image for development environments featuring Node.js, TypeScript, Claude Code CLI, git, and vfox version manager.
 
 ## ✨ Features
 
 - 🔒 **Distroless** - Chainguard Wolfi base
 - 🐚 **Zsh & Fish** - Modern shells with vfox integration
 - 🪟 **Zellij** - Terminal multiplexer
-- 🐍 **Python 3** with pip
 - 💚 **Node.js** with npm
 - 🔷 **TypeScript** with ts-node for direct execution
 - 🤖 **Claude Code CLI** - Anthropic's official CLI for Claude
@@ -66,9 +65,6 @@ docker run -it --rm \
 ### Run a specific command
 
 ```bash
-# Run Python script
-docker run -it --rm -v $(pwd):/workspace ghcr.io/jogai/cloister:latest python3 script.py
-
 # Run TypeScript
 docker run -it --rm -v $(pwd):/workspace ghcr.io/jogai/cloister:latest ts-node app.ts
 ```
@@ -92,7 +88,6 @@ docker buildx build --platform linux/amd64 -t cloister .
 | Fish | Wolfi package |
 | Zellij | Latest |
 | Node.js | Wolfi package |
-| Python | Wolfi package |
 | TypeScript | Latest npm |
 | Claude Code CLI | Latest |
 | lazygit | Wolfi package |
@@ -104,7 +99,6 @@ docker buildx build --platform linux/amd64 -t cloister .
 |----------|-------------|---------|
 | `ANTHROPIC_API_KEY` | API key for Claude Code CLI | - |
 | `NODE_ENV` | Node.js environment | production |
-| `PYTHONUNBUFFERED` | Unbuffered Python output | 1 |
 | `LANG` | System locale | C.UTF-8 |
 | `VFOX_HOME` | vfox configuration directory | /home/monk/.version-fox |
 | `SHELL` | Default shell | /bin/zsh |

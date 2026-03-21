@@ -1,14 +1,3 @@
-# Cloister - Distroless Development Environment with Fish Shell
-# Multi-stage build using Chainguard Wolfi for minimal attack surface
-#
-# Build:
-#   docker build -t cloister .
-#
-# Features:
-#   - Wolfi-based (distroless-inspired, minimal packages)
-#   - No package manager in final image
-#   - Fish shell, Python, Node.js, TypeScript, Claude Code CLI, vfox
-
 # =============================================================================
 # Stage 1: Builder - Compile and prepare all artifacts
 # =============================================================================
@@ -82,8 +71,6 @@ RUN apk add --no-cache \
     ripgrep \
     fd \
     fzf \
-    python3 \
-    py3-pip \
     tree
 
 # Create non-root user with sh as default shell
@@ -135,7 +122,7 @@ NC='\033[0m'
 printf "${CYAN}🏛  Cloister Development Environment${NC}\n"
 
 # Print tool versions
-for tool in "Git:git" "Python:python" "Node.js:node" "npm:npm" "TypeScript:tsc" "Claude:claude" "vfox:vfox" "Zellij:zellij" "Fish:fish" "Zsh:zsh"; do
+for tool in "Git:git" "Node.js:node" "npm:npm" "TypeScript:tsc" "Claude:claude" "vfox:vfox" "Zellij:zellij" "Fish:fish" "Zsh:zsh"; do
     name="${tool%%:*}"
     cmd="${tool#*:}"
     version=$($cmd --version 2>/dev/null | sed 's/^[^0-9]*//' | head -n1)
@@ -165,8 +152,6 @@ RUN cat > /home/monk/.config/fish/config.fish << 'FISHEOF'
 # Cloister Fish Configuration
 set -gx PATH /home/monk/.local/bin /usr/local/bin /usr/bin /bin $PATH
 set -gx HOME /home/monk
-set -gx PYTHONUNBUFFERED 1
-set -gx PYTHONDONTWRITEBYTECODE 1
 set -gx LANG C.UTF-8
 set -gx LC_ALL C.UTF-8
 set -gx VFOX_HOME /home/monk/.version-fox
@@ -183,8 +168,6 @@ RUN cat > /home/monk/.zshrc << 'ZSHEOF'
 # Cloister Zsh Configuration
 export PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 export HOME="/home/monk"
-export PYTHONUNBUFFERED=1
-export PYTHONDONTWRITEBYTECODE=1
 export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
 export VFOX_HOME="/home/monk/.version-fox"
@@ -209,8 +192,6 @@ ENV PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin" \
     XDG_DATA_HOME="/home/monk/.local/share" \
     XDG_CONFIG_HOME="/home/monk/.config" \
     XDG_CACHE_HOME="/home/monk/.cache" \
-    PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     VFOX_HOME="/home/monk/.version-fox" \
@@ -226,7 +207,7 @@ CMD ["/home/monk/.local/bin/cloister-start"]
 # OCI Labels
 # =============================================================================
 LABEL org.opencontainers.image.title="Cloister" \
-      org.opencontainers.image.description="Distroless development environment with Fish shell, Python, Node.js, TypeScript, Claude Code CLI, git, and vfox" \
+      org.opencontainers.image.description="Distroless development environment with Fish shell, Node.js, TypeScript, Claude Code CLI, git, and vfox" \
       org.opencontainers.image.vendor="Cloister" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.source="https://github.com/jogai/cloister" \
