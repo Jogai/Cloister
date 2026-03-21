@@ -89,7 +89,7 @@ docker buildx build --platform linux/amd64 -t cloister .
 | Zellij | Latest |
 | Node.js | Wolfi package |
 | TypeScript | Latest npm |
-| Claude Code CLI | Latest |
+| Claude Code CLI | Latest (native binary) |
 | lazygit | Wolfi package |
 | vfox | Latest |
 

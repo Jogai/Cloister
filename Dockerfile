@@ -8,7 +8,8 @@ RUN apk add --no-cache \
     ca-certificates \
     curl \
     bash \
-    git
+    git \
+    jq
 
 # renovate: datasource=github-releases depName=version-fox/vfox
 ARG VFOX_VERSION=1.0.6
@@ -16,11 +17,22 @@ ARG VFOX_VERSION=1.0.6
 # renovate: datasource=github-releases depName=zellij-org/zellij
 ARG ZELLIJ_VERSION=0.43.1
 
-# Download zellij and vfox binaries
+# renovate: datasource=npm depName=@anthropic-ai/claude-code
+ARG CLAUDE_CODE_VERSION=2.1.81
+
+# Download zellij, vfox, and claude binaries
+ARG TARGETARCH
 RUN mkdir -p /usr/local/bin && \
     ARCH=$(uname -m) && \
     curl -fsSL "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-musl.tar.gz" | tar -xz -C /usr/local/bin && \
-    curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash
+    curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash && \
+    GCS_BUCKET="https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases" && \
+    PLATFORM="linux-$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64")" && \
+    CHECKSUM=$(curl -fsSL "$GCS_BUCKET/$CLAUDE_CODE_VERSION/manifest.json" | jq -r ".platforms[\"$PLATFORM\"].checksum") && \
+    curl -fsSL "$GCS_BUCKET/$CLAUDE_CODE_VERSION/$PLATFORM/claude" -o /usr/local/bin/claude && \
+    ACTUAL=$(sha256sum /usr/local/bin/claude | cut -d' ' -f1) && \
+    [ "$ACTUAL" = "$CHECKSUM" ] || { echo "Checksum verification failed"; exit 1; } && \
+    chmod +x /usr/local/bin/claude
 
 # =============================================================================
 # Stage 2: Node Builder - Prepare all npm packages
@@ -34,13 +46,10 @@ USER root
 ARG TYPESCRIPT_VERSION=5.9.3
 # renovate: datasource=npm depName=ts-node
 ARG TS_NODE_VERSION=10.9.2
-# renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION=2.1.81
 
 RUN npm install -g \
     typescript@${TYPESCRIPT_VERSION} \
     ts-node@${TS_NODE_VERSION} \
-    @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} \
     @types/node \
     && npm cache clean --force
 
@@ -78,15 +87,14 @@ RUN adduser -D -u 1000 -h /home/monk -s /bin/sh monk && \
     mkdir -p /workspace && \
     chown monk:monk /workspace
 
-# Copy vfox and zellij from builder
-COPY --from=builder /usr/local/bin/vfox /usr/local/bin/zellij /usr/local/bin/
+# Copy vfox, zellij, and claude from builder
+COPY --from=builder /usr/local/bin/vfox /usr/local/bin/zellij /usr/local/bin/claude /usr/local/bin/
 
 # Copy global npm packages from node-builder and create symlinks
 COPY --from=node-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -sf /usr/local/lib/node_modules/typescript/bin/tsc /usr/local/bin/tsc && \
     ln -sf /usr/local/lib/node_modules/typescript/bin/tsserver /usr/local/bin/tsserver && \
-    ln -sf /usr/local/lib/node_modules/ts-node/dist/bin.js /usr/local/bin/ts-node && \
-    ln -sf /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js /usr/local/bin/claude
+    ln -sf /usr/local/lib/node_modules/ts-node/dist/bin.js /usr/local/bin/ts-node
 
 # Switch to monk user for remaining setup
 USER monk
