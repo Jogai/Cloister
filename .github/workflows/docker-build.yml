@@ -95,7 +95,7 @@ jobs:
             type=raw,value=${{ github.event.inputs.image_tag }},enable=${{ github.event.inputs.image_tag != '' }}
           labels: |
             org.opencontainers.image.title=Cloister
-            org.opencontainers.image.description=Distroless development environment with Fish shell, Node.js, TypeScript, Claude Code CLI, git, and vfox
+            org.opencontainers.image.description=Development environment with Fish shell, Node.js, TypeScript, Python, Claude Code CLI, git, and vfox
             org.opencontainers.image.vendor=Cloister
 
       - name: Build and push Docker image
@@ -208,6 +208,16 @@ jobs:
       - name: Pull image
         run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
+      - name: Test Python
+        run: |
+          echo "Testing Python..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest python3 --version
+
+      - name: Test uv
+        run: |
+          echo "Testing uv..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest uv --version
+
       - name: Test Node.js
         run: |
           echo "Testing Node.js..."
@@ -256,6 +266,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Tool | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Python | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| uv | OK |" >> $GITHUB_STEP_SUMMARY
           echo "| Fish shell | OK |" >> $GITHUB_STEP_SUMMARY
           echo "| Node.js | OK |" >> $GITHUB_STEP_SUMMARY
           echo "| npm | OK |" >> $GITHUB_STEP_SUMMARY

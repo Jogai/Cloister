@@ -4,19 +4,20 @@
 
 # 🏛️ Cloister
 
-A distroless Docker image for development environments featuring Node.js, TypeScript, Claude Code CLI, git, and vfox version manager.
+A Docker image for development environments featuring Python, Node.js, TypeScript, Claude Code CLI, git, and vfox version manager. Based on Debian Trixie with uv for Python package management.
 
 ## ✨ Features
 
-- 🔒 **Distroless** - Chainguard Wolfi base
+- 🤖 **Claude Code CLI** - Anthropic's official CLI (native binary)
+- 📦 **git** with git-lfs - Version control
 - 🐚 **Zsh & Fish** - Modern shells with vfox integration
 - 🪟 **Zellij** - Terminal multiplexer
+- 🐍 **Python 3.14** with uv package manager
 - 💚 **Node.js** with npm
 - 🔷 **TypeScript** with ts-node for direct execution
-- 🤖 **Claude Code CLI** - Anthropic's official CLI for Claude
-- 📦 **git** with git-lfs - Version control
 - 🦥 **lazygit** - Terminal UI for git
 - 🦊 **vfox** - Universal version manager
+- 🔍 **ripgrep, fd, fzf** - Fast search tools
 
 ## 🚀 Quick Start
 
@@ -81,32 +82,35 @@ docker buildx build --platform linux/amd64 -t cloister .
 
 ## 🛠️ Tool Versions
 
-| Tool | Version |
-|------|---------|
-| Wolfi | latest |
-| Zsh | Wolfi package |
-| Fish | Wolfi package |
-| Zellij | Latest |
-| Node.js | Wolfi package |
-| TypeScript | Latest npm |
-| Claude Code CLI | Latest (native binary) |
-| lazygit | Wolfi package |
-| vfox | Latest |
+| Tool | Source |
+|------|--------|
+| Claude Code CLI | Native binary (GCS) |
+| git | Debian package |
+| Fish | GitHub release |
+| Zsh | Debian package |
+| Zellij | GitHub release |
+| Python | Base image (uv) |
+| uv | Base image |
+| Node.js | Debian package |
+| npm | Debian package |
+| TypeScript | npm |
+| ts-node | npm |
+| lazygit | GitHub release |
+| vfox | GitHub release |
 
 ## ⚙️ Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `ANTHROPIC_API_KEY` | API key for Claude Code CLI | - |
-| `NODE_ENV` | Node.js environment | production |
 | `LANG` | System locale | C.UTF-8 |
 | `VFOX_HOME` | vfox configuration directory | /home/monk/.version-fox |
-| `SHELL` | Default shell | /bin/zsh |
+| `SHELL` | Default shell | /usr/local/bin/fish |
 
 ## 🔒 Security
 
 - Runs as non-root user (UID 1000)
-- Distroless Wolfi base
+- Debian Trixie slim base
 - Minimal attack surface with only runtime dependencies
 - Regular security scanning via Trivy
 - SBOM and provenance attestations included

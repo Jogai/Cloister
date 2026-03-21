@@ -11,13 +11,20 @@ RUN apk add --no-cache \
     curl \
     bash \
     git \
-    jq
+    jq \
+    xz
 
 # renovate: datasource=github-releases depName=version-fox/vfox
 ARG VFOX_VERSION=1.0.6
 
 # renovate: datasource=github-releases depName=zellij-org/zellij
 ARG ZELLIJ_VERSION=0.43.1
+
+# renovate: datasource=github-releases depName=jesseduffield/lazygit
+ARG LAZYGIT_VERSION=0.51.1
+
+# renovate: datasource=github-releases depName=fish-shell/fish-shell
+ARG FISH_VERSION=4.5.0
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
 ARG CLAUDE_CODE_VERSION=2.1.81
@@ -31,7 +38,11 @@ ARG TS_NODE_VERSION=10.9.2
 ARG TARGETARCH
 RUN mkdir -p /usr/local/bin && \
     ARCH=$(uname -m) && \
+    LAZYGIT_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "arm64") && \
+    FISH_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "aarch64") && \
     curl -fsSL "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-musl.tar.gz" | tar -xz -C /usr/local/bin && \
+    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_${LAZYGIT_ARCH}.tar.gz" | tar -xz -C /usr/local/bin lazygit && \
+    curl -fsSL "https://github.com/fish-shell/fish-shell/releases/download/${FISH_VERSION}/fish-${FISH_VERSION}-linux-${FISH_ARCH}.tar.xz" | tar -xJ -C /usr/local/bin && \
     curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash && \
     GCS_BUCKET="https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases" && \
     PLATFORM="linux-$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64")" && \
@@ -43,53 +54,61 @@ RUN mkdir -p /usr/local/bin && \
 
 # Install global npm packages
 RUN npm install -g \
+    npm \
     typescript@${TYPESCRIPT_VERSION} \
     ts-node@${TS_NODE_VERSION} \
     @types/node \
     && npm cache clean --force
 
 # =============================================================================
-# Stage 2: Final - Minimal runtime image (distroless-style)
+# Stage 2: Final - Runtime image
 # =============================================================================
-FROM cgr.dev/chainguard/wolfi-base:latest@sha256:73de6aadd7e28fb516fa1270fcb411b94ee79949635e7de2a4bdb8705f6c120c AS final
+FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim AS final
 
-# Install only runtime dependencies using Wolfi package names
-RUN apk add --no-cache \
-    ca-certificates-bundle \
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     curl \
     wget \
-    fish \
     zsh \
     git \
     git-lfs \
-    lazygit \
     gnupg \
-    xz \
-    gzip \
+    xz-utils \
     unzip \
     jq \
     less \
     nodejs \
-    npm \
     openssh-client \
     ripgrep \
-    fd \
+    fd-find \
     fzf \
-    tree
+    tree \
+    && apt-get purge -y --auto-remove \
+        libssl-dev \
+    && rm -rf /var/lib/apt/lists/* \
+        /usr/share/doc/* \
+        /usr/share/man/* \
+        /usr/share/info/* \
+        /usr/share/locale/* \
+        /usr/share/gnupg/help.*.txt \
+    && ln -sf /usr/bin/fdfind /usr/bin/fd
 
-# Create non-root user with sh as default shell
-RUN adduser -D -u 1000 -h /home/monk -s /bin/sh monk && \
+# Create non-root user with fish as default shell
+RUN useradd -m -u 1000 -d /home/monk -s /usr/local/bin/fish monk && \
     mkdir -p /workspace && \
     chown monk:monk /workspace
 
-# Copy vfox, zellij, and claude from builder
-COPY --from=builder /usr/local/bin/vfox /usr/local/bin/zellij /usr/local/bin/claude /usr/local/bin/
+# Copy vfox, zellij, lazygit, fish, and claude from builder
+COPY --from=builder /usr/local/bin/vfox /usr/local/bin/zellij /usr/local/bin/lazygit /usr/local/bin/fish /usr/local/bin/claude /usr/local/bin/
 
 # Copy global npm packages from builder and create symlinks
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -sf /usr/local/lib/node_modules/typescript/bin/tsc /usr/local/bin/tsc && \
     ln -sf /usr/local/lib/node_modules/typescript/bin/tsserver /usr/local/bin/tsserver && \
-    ln -sf /usr/local/lib/node_modules/ts-node/dist/bin.js /usr/local/bin/ts-node
+    ln -sf /usr/local/lib/node_modules/ts-node/dist/bin.js /usr/local/bin/ts-node && \
+    ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # Switch to monk user for remaining setup
 USER monk
@@ -125,7 +144,7 @@ NC='\033[0m'
 printf "${CYAN}🏛  Cloister Development Environment${NC}\n"
 
 # Print tool versions
-for tool in "Git:git" "Node.js:node" "npm:npm" "TypeScript:tsc" "Claude:claude" "vfox:vfox" "Zellij:zellij" "Fish:fish" "Zsh:zsh"; do
+for tool in "Claude:claude" "Git:git" "Fish:fish" "Zsh:zsh" "Zellij:zellij" "Python:python3" "uv:uv" "Node.js:node" "npm:npm" "TypeScript:tsc" "vfox:vfox"; do
     name="${tool%%:*}"
     cmd="${tool#*:}"
     version=$($cmd --version 2>/dev/null | sed 's/^[^0-9]*//' | head -n1)
@@ -146,7 +165,7 @@ echo "   claude --dangerously-skip-permissions"
 echo ""
 
 # Start default shell
-exec /bin/sh
+exec /usr/local/bin/fish
 STARTEOF
 RUN chmod +x /home/monk/.local/bin/cloister-start
 
@@ -199,7 +218,7 @@ ENV PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin" \
     LC_ALL=C.UTF-8 \
     VFOX_HOME="/home/monk/.version-fox" \
     NPM_CONFIG_PREFIX="/home/monk/.npm-global" \
-    SHELL="/bin/sh"
+    SHELL="/usr/local/bin/fish"
 
 WORKDIR /workspace
 
@@ -210,7 +229,7 @@ CMD ["/home/monk/.local/bin/cloister-start"]
 # OCI Labels
 # =============================================================================
 LABEL org.opencontainers.image.title="Cloister" \
-      org.opencontainers.image.description="Distroless development environment with Fish shell, Node.js, TypeScript, Claude Code CLI, git, and vfox" \
+      org.opencontainers.image.description="Development environment with Fish shell, Node.js, TypeScript, Python, Claude Code CLI, git, and vfox" \
       org.opencontainers.image.vendor="Cloister" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.source="https://github.com/jogai/cloister" \
