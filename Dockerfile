@@ -30,7 +30,7 @@ ARG FISH_VERSION=4.5.0
 ARG CLAUDE_CODE_VERSION=2.1.81
 
 # renovate: datasource=npm depName=typescript
-ARG TYPESCRIPT_VERSION=5.9.3
+ARG TYPESCRIPT_VERSION=6.0.2
 # renovate: datasource=npm depName=ts-node
 ARG TS_NODE_VERSION=10.9.2
 
