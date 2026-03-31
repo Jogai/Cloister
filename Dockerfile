@@ -27,7 +27,7 @@ ARG LAZYGIT_VERSION=0.60.0
 ARG FISH_VERSION=4.5.0
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION=2.1.81
+ARG CLAUDE_CODE_VERSION=2.1.87
 
 # renovate: datasource=npm depName=typescript
 ARG TYPESCRIPT_VERSION=6.0.2
