@@ -24,7 +24,7 @@ ARG ZELLIJ_VERSION=0.44.0
 ARG LAZYGIT_VERSION=0.60.0
 
 # renovate: datasource=github-releases depName=fish-shell/fish-shell
-ARG FISH_VERSION=4.5.0
+ARG FISH_VERSION=4.6.0
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
 ARG CLAUDE_CODE_VERSION=2.1.87
