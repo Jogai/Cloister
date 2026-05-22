@@ -12,15 +12,10 @@
   ],
   "timezone": "Europe/Amsterdam",
   "platformAutomerge": true,
+  "automerge": true,
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
   "packageRules": [
-    {
-      "description": "Automerge minor and patch updates",
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "automerge": true
-    },
     {
       "description": "Group all npm packages in Dockerfile",
       "matchDatasources": [
