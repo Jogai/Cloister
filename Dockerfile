@@ -1,7 +1,7 @@
 # =============================================================================
 # Stage 1: Builder - Prepare all artifacts
 # =============================================================================
-FROM cgr.dev/chainguard/node:latest-dev@sha256:5f539ca9ce7ed8b858059b3316640232bcb1ae7d3513ae67bb95527533bf1fba AS builder
+FROM cgr.dev/chainguard/node:latest-dev@sha256:c149d47bc5cd513b3e3a777107523db4052c88195bfc6082b7444ef011d23901 AS builder
 
 USER root
 
@@ -12,6 +12,7 @@ RUN apk add --no-cache \
     bash \
     git \
     jq \
+    unzip \
     xz
 
 # renovate: datasource=github-releases depName=version-fox/vfox
@@ -21,13 +22,16 @@ ARG VFOX_VERSION=1.0.11
 ARG ZELLIJ_VERSION=0.44.3
 
 # renovate: datasource=github-releases depName=jesseduffield/lazygit
-ARG LAZYGIT_VERSION=0.62.1
+ARG LAZYGIT_VERSION=0.62.2
 
 # renovate: datasource=github-releases depName=fish-shell/fish-shell
 ARG FISH_VERSION=4.7.1
 
+# renovate: datasource=github-releases depName=ast-grep/ast-grep
+ARG ASTGREP_VERSION=0.43.0
+
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION=2.1.161
+ARG CLAUDE_CODE_VERSION=2.1.162
 
 # renovate: datasource=npm depName=typescript
 ARG TYPESCRIPT_VERSION=6.0.3
@@ -40,9 +44,13 @@ RUN mkdir -p /usr/local/bin && \
     ARCH=$(uname -m) && \
     LAZYGIT_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "arm64") && \
     FISH_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "aarch64") && \
+    AST_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "aarch64") && \
     curl -fsSL "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-musl.tar.gz" | tar -xz -C /usr/local/bin && \
     curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_${LAZYGIT_ARCH}.tar.gz" | tar -xz -C /usr/local/bin lazygit && \
     curl -fsSL "https://github.com/fish-shell/fish-shell/releases/download/${FISH_VERSION}/fish-${FISH_VERSION}-linux-${FISH_ARCH}.tar.xz" | tar -xJ -C /usr/local/bin && \
+    curl -fsSL "https://github.com/ast-grep/ast-grep/releases/download/${ASTGREP_VERSION}/app-${AST_ARCH}-unknown-linux-gnu.zip" -o /tmp/ast-grep.zip && \
+    unzip -o /tmp/ast-grep.zip ast-grep -d /usr/local/bin && \
+    rm /tmp/ast-grep.zip && \
     curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash && \
     GCS_BUCKET="https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases" && \
     PLATFORM="linux-$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64")" && \
@@ -63,11 +71,12 @@ RUN npm install -g \
 # =============================================================================
 # Stage 2: Final - Runtime image
 # =============================================================================
-FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim@sha256:2e56abd547ae66fa0e46597dd68b2a45445319413084a973e1b2613ee154c3a6 AS final
+FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim@sha256:3394073cf29bbeea37424b32915cd491d404c952d0ff1ef69feef080524a4c94 AS final
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    coreutils \
     curl \
     wget \
     zsh \
@@ -99,8 +108,8 @@ RUN useradd -m -u 1000 -d /home/monk -s /usr/local/bin/fish monk && \
     mkdir -p /workspace && \
     chown monk:monk /workspace
 
-# Copy vfox, zellij, lazygit, fish, and claude from builder
-COPY --from=builder /usr/local/bin/vfox /usr/local/bin/zellij /usr/local/bin/lazygit /usr/local/bin/fish /usr/local/bin/claude /usr/local/bin/
+# Copy vfox, zellij, lazygit, fish, claude, and ast-grep from builder
+COPY --from=builder /usr/local/bin/vfox /usr/local/bin/zellij /usr/local/bin/lazygit /usr/local/bin/fish /usr/local/bin/claude /usr/local/bin/ast-grep /usr/local/bin/
 
 # Copy global npm packages from builder and create symlinks
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
@@ -144,7 +153,7 @@ NC='\033[0m'
 printf "${CYAN}🏛  Cloister Development Environment${NC}\n"
 
 # Print tool versions
-for tool in "Claude:claude" "Git:git" "Fish:fish" "Zsh:zsh" "Zellij:zellij" "Python:python3" "uv:uv" "Node.js:node" "npm:npm" "TypeScript:tsc" "vfox:vfox"; do
+for tool in "Claude:claude" "Git:git" "Fish:fish" "Zsh:zsh" "Zellij:zellij" "Python:python3" "uv:uv" "Node.js:node" "npm:npm" "TypeScript:tsc" "vfox:vfox" "ast-grep:ast-grep"; do
     name="${tool%%:*}"
     cmd="${tool#*:}"
     version=$($cmd --version 2>/dev/null | sed 's/^[^0-9]*//' | head -n1)
