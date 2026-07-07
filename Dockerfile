@@ -31,7 +31,7 @@ ARG FISH_VERSION=4.8.0
 ARG ASTGREP_VERSION=0.44.0
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION=2.1.199
+ARG CLAUDE_CODE_VERSION=2.1.202
 
 # renovate: datasource=npm depName=typescript
 ARG TYPESCRIPT_VERSION=6.0.3
