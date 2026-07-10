@@ -1,0 +1,39 @@
+#!/bin/sh
+# Cloister banner generator
+#
+# Run once at build time to bake the greeting (with fixed tool versions) into a
+# static file that the shells cat on startup. See the Dockerfile for how it is
+# copied in, executed, and removed.
+
+# ANSI color codes
+CYAN='\033[0;36m'
+GRAY='\033[0;90m'
+NC='\033[0m'
+
+# Greeting
+printf "${CYAN}🏛  Cloister Development Environment${NC}\n"
+
+# Print tool versions
+for tool in "Claude:claude" "Git:git" "Fish:fish" "Zsh:zsh" "Zellij:zellij" "Python:python3" "uv:uv" "Node.js:node" "npm:npm" "TypeScript:tsc" "vfox:vfox" "ast-grep:ast-grep"; do
+    name="${tool%%:*}"
+    cmd="${tool#*:}"
+    version=$($cmd --version 2>/dev/null | sed 's/^[^0-9]*//' | head -n1)
+    printf "   %-11s%s\n" "$name:" "$version"
+done
+echo ""
+
+# Usage instructions
+printf "${GRAY}Available shells:${NC}\n"
+echo "   zsh      - Powerful shell with great plugin ecosystem"
+echo "   fish     - Friendly shell with autosuggestions"
+echo ""
+printf "${GRAY}Terminal multiplexer:${NC}\n"
+echo "   zellij   - Split panes, run Claude, fish, and zsh all at once"
+echo ""
+printf "${GRAY}AI assistant:${NC}\n"
+echo "   claude --dangerously-skip-permissions"
+echo ""
+printf "${GRAY}Browser automation:${NC}\n"
+echo "   Chromium libraries are preinstalled. Fetch the browser with:"
+echo "   npx playwright install chromium"
+echo ""

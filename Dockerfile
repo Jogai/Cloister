@@ -160,45 +160,9 @@ RUN zellij setup --generate-completion fish > /home/monk/.config/fish/completion
     vfox completion fish > /home/monk/.config/fish/completions/vfox.fish && \
     vfox completion zsh > /home/monk/.zsh-completions/_vfox
 
-# Create banner generator (POSIX sh) - run once at build time to bake the
-# greeting (with fixed tool versions) into a static file
-RUN cat > /home/monk/.local/bin/cloister-banner-gen << 'GENEOF'
-#!/bin/sh
-# Cloister banner generator
-
-# ANSI color codes
-CYAN='\033[0;36m'
-GRAY='\033[0;90m'
-NC='\033[0m'
-
-# Greeting
-printf "${CYAN}🏛  Cloister Development Environment${NC}\n"
-
-# Print tool versions
-for tool in "Claude:claude" "Git:git" "Fish:fish" "Zsh:zsh" "Zellij:zellij" "Python:python3" "uv:uv" "Node.js:node" "npm:npm" "TypeScript:tsc" "vfox:vfox" "ast-grep:ast-grep"; do
-    name="${tool%%:*}"
-    cmd="${tool#*:}"
-    version=$($cmd --version 2>/dev/null | sed 's/^[^0-9]*//' | head -n1)
-    printf "   %-11s%s\n" "$name:" "$version"
-done
-echo ""
-
-# Usage instructions
-printf "${GRAY}Available shells:${NC}\n"
-echo "   zsh      - Powerful shell with great plugin ecosystem"
-echo "   fish     - Friendly shell with autosuggestions"
-echo ""
-printf "${GRAY}Terminal multiplexer:${NC}\n"
-echo "   zellij   - Split panes, run Claude, fish, and zsh all at once"
-echo ""
-printf "${GRAY}AI assistant:${NC}\n"
-echo "   claude --dangerously-skip-permissions"
-echo ""
-printf "${GRAY}Browser automation:${NC}\n"
-echo "   Chromium libraries are preinstalled. Fetch the browser with:"
-echo "   npx playwright install chromium"
-echo ""
-GENEOF
+# Copy the banner generator; it is run once at build time (see below) to bake
+# the greeting with fixed tool versions into a static file, then removed
+COPY scripts/cloister-banner-gen /home/monk/.local/bin/cloister-banner-gen
 
 # Create banner script (POSIX sh) - prints the pre-rendered banner; shown by
 # the shell configs so it greets the first terminal and every zellij pane
@@ -214,7 +178,7 @@ RUN cat > /home/monk/.local/bin/cloister-start << 'STARTEOF'
 # Cloister entrypoint
 exec /usr/local/bin/fish
 STARTEOF
-RUN chmod +x /home/monk/.local/bin/cloister-banner-gen /home/monk/.local/bin/cloister-banner /home/monk/.local/bin/cloister-start
+RUN chmod +x /home/monk/.local/bin/cloister-banner /home/monk/.local/bin/cloister-start
 
 # Configure fish shell
 RUN cat > /home/monk/.config/fish/config.fish << 'FISHEOF'
@@ -289,7 +253,7 @@ ENV PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin" \
 # Pre-render the banner now that every tool is on PATH; versions are fixed at
 # build time, so shells cat this file instead of probing versions on startup
 RUN mkdir -p /home/monk/.local/share/cloister && \
-    /home/monk/.local/bin/cloister-banner-gen > /home/monk/.local/share/cloister/banner && \
+    sh /home/monk/.local/bin/cloister-banner-gen > /home/monk/.local/share/cloister/banner && \
     rm /home/monk/.local/bin/cloister-banner-gen
 
 WORKDIR /workspace
