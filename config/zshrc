@@ -1,0 +1,26 @@
+# Cloister Zsh Configuration
+export PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+export HOME="/home/monk"
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+export VFOX_HOME="/home/monk/.version-fox"
+export NPM_CONFIG_PREFIX="/home/monk/.npm-global"
+
+# Initialize vfox if available
+if command -v vfox &> /dev/null; then
+    eval "$(vfox activate zsh)"
+fi
+
+# Zellij completions
+fpath=(~/.zsh-completions $fpath)
+autoload -Uz compinit && compinit
+
+# Show the Cloister banner once per interactive terminal / zellij pane
+if [[ -o interactive ]]; then
+    __banner_marker="/tmp/.cloister-banner-$(tty 2>/dev/null | tr / _)"
+    if [[ ! -e "$__banner_marker" ]]; then
+        cloister-banner
+        touch "$__banner_marker" 2>/dev/null
+    fi
+    unset __banner_marker
+fi

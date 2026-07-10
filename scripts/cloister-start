@@ -1,0 +1,4 @@
+#!/bin/sh
+# Cloister entrypoint - the banner is rendered by the shell config
+# (cloister-banner), so this just launches the default shell.
+exec /usr/local/bin/fish
