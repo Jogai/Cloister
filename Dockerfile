@@ -160,11 +160,11 @@ RUN zellij setup --generate-completion fish > /home/monk/.config/fish/completion
     vfox completion fish > /home/monk/.config/fish/completions/vfox.fish && \
     vfox completion zsh > /home/monk/.zsh-completions/_vfox
 
-# Create banner script (POSIX sh) - shown by the shell configs on startup,
-# so it greets the first terminal as well as every zellij pane
-RUN cat > /home/monk/.local/bin/cloister-banner << 'BANNEREOF'
+# Create banner generator (POSIX sh) - run once at build time to bake the
+# greeting (with fixed tool versions) into a static file
+RUN cat > /home/monk/.local/bin/cloister-banner-gen << 'GENEOF'
 #!/bin/sh
-# Cloister banner
+# Cloister banner generator
 
 # ANSI color codes
 CYAN='\033[0;36m'
@@ -198,6 +198,13 @@ printf "${GRAY}Browser automation:${NC}\n"
 echo "   Chromium libraries are preinstalled. Fetch the browser with:"
 echo "   npx playwright install chromium"
 echo ""
+GENEOF
+
+# Create banner script (POSIX sh) - prints the pre-rendered banner; shown by
+# the shell configs so it greets the first terminal and every zellij pane
+RUN cat > /home/monk/.local/bin/cloister-banner << 'BANNEREOF'
+#!/bin/sh
+cat /home/monk/.local/share/cloister/banner
 BANNEREOF
 
 # Create entrypoint script (POSIX sh) - the banner is rendered by the shell
@@ -207,7 +214,7 @@ RUN cat > /home/monk/.local/bin/cloister-start << 'STARTEOF'
 # Cloister entrypoint
 exec /usr/local/bin/fish
 STARTEOF
-RUN chmod +x /home/monk/.local/bin/cloister-banner /home/monk/.local/bin/cloister-start
+RUN chmod +x /home/monk/.local/bin/cloister-banner-gen /home/monk/.local/bin/cloister-banner /home/monk/.local/bin/cloister-start
 
 # Configure fish shell
 RUN cat > /home/monk/.config/fish/config.fish << 'FISHEOF'
@@ -278,6 +285,12 @@ ENV PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin" \
     VFOX_HOME="/home/monk/.version-fox" \
     NPM_CONFIG_PREFIX="/home/monk/.npm-global" \
     SHELL="/usr/local/bin/fish"
+
+# Pre-render the banner now that every tool is on PATH; versions are fixed at
+# build time, so shells cat this file instead of probing versions on startup
+RUN mkdir -p /home/monk/.local/share/cloister && \
+    /home/monk/.local/bin/cloister-banner-gen > /home/monk/.local/share/cloister/banner && \
+    rm /home/monk/.local/bin/cloister-banner-gen
 
 WORKDIR /workspace
 
