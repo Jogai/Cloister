@@ -160,10 +160,11 @@ RUN zellij setup --generate-completion fish > /home/monk/.config/fish/completion
     vfox completion fish > /home/monk/.config/fish/completions/vfox.fish && \
     vfox completion zsh > /home/monk/.zsh-completions/_vfox
 
-# Create entrypoint script with greeting (POSIX sh)
-RUN cat > /home/monk/.local/bin/cloister-start << 'STARTEOF'
+# Create banner script (POSIX sh) - shown by the shell configs on startup,
+# so it greets the first terminal as well as every zellij pane
+RUN cat > /home/monk/.local/bin/cloister-banner << 'BANNEREOF'
 #!/bin/sh
-# Cloister entrypoint
+# Cloister banner
 
 # ANSI color codes
 CYAN='\033[0;36m'
@@ -197,11 +198,16 @@ printf "${GRAY}Browser automation:${NC}\n"
 echo "   Chromium libraries are preinstalled. Fetch the browser with:"
 echo "   npx playwright install chromium"
 echo ""
+BANNEREOF
 
-# Start default shell
+# Create entrypoint script (POSIX sh) - the banner is rendered by the shell
+# config (cloister-banner), so this just launches the default shell
+RUN cat > /home/monk/.local/bin/cloister-start << 'STARTEOF'
+#!/bin/sh
+# Cloister entrypoint
 exec /usr/local/bin/fish
 STARTEOF
-RUN chmod +x /home/monk/.local/bin/cloister-start
+RUN chmod +x /home/monk/.local/bin/cloister-banner /home/monk/.local/bin/cloister-start
 
 # Configure fish shell
 RUN cat > /home/monk/.config/fish/config.fish << 'FISHEOF'
@@ -216,6 +222,15 @@ set -gx NPM_CONFIG_PREFIX /home/monk/.npm-global
 # Initialize vfox if available
 if type -q vfox
     vfox activate fish | source
+end
+
+# Show the Cloister banner once per interactive terminal / zellij pane
+if status is-interactive
+    set -l __banner_marker /tmp/.cloister-banner-(tty | string replace -a / _)
+    if not test -e $__banner_marker
+        cloister-banner
+        touch $__banner_marker 2>/dev/null
+    end
 end
 FISHEOF
 
@@ -237,6 +252,16 @@ fi
 # Zellij completions
 fpath=(~/.zsh-completions $fpath)
 autoload -Uz compinit && compinit
+
+# Show the Cloister banner once per interactive terminal / zellij pane
+if [[ -o interactive ]]; then
+    __banner_marker="/tmp/.cloister-banner-$(tty 2>/dev/null | tr / _)"
+    if [[ ! -e "$__banner_marker" ]]; then
+        cloister-banner
+        touch "$__banner_marker" 2>/dev/null
+    fi
+    unset __banner_marker
+fi
 ZSHEOF
 
 # Create npm global directory for user installations
