@@ -1,0 +1,4 @@
+#!/bin/sh
+# Print the pre-rendered Cloister banner (baked at build time by
+# cloister-banner-gen). Called from the shell configs on startup.
+cat /home/monk/.local/share/cloister/banner

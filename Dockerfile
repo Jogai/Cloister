@@ -38,27 +38,18 @@ ARG TYPESCRIPT_VERSION=6.0.3
 # renovate: datasource=npm depName=ts-node
 ARG TS_NODE_VERSION=10.9.2
 
-# Download zellij, vfox, and claude binaries
+# Download and install the pinned tool binaries (see scripts/install-tools.sh).
+# The version ARGs are passed through explicitly so that bumping any of them
+# busts the build cache for this step.
 ARG TARGETARCH
-RUN mkdir -p /usr/local/bin && \
-    ARCH=$(uname -m) && \
-    LAZYGIT_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "arm64") && \
-    FISH_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "aarch64") && \
-    AST_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "aarch64") && \
-    curl -fsSL "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-musl.tar.gz" | tar -xz -C /usr/local/bin && \
-    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_${LAZYGIT_ARCH}.tar.gz" | tar -xz -C /usr/local/bin lazygit && \
-    curl -fsSL "https://github.com/fish-shell/fish-shell/releases/download/${FISH_VERSION}/fish-${FISH_VERSION}-linux-${FISH_ARCH}.tar.xz" | tar -xJ -C /usr/local/bin && \
-    curl -fsSL "https://github.com/ast-grep/ast-grep/releases/download/${ASTGREP_VERSION}/app-${AST_ARCH}-unknown-linux-gnu.zip" -o /tmp/ast-grep.zip && \
-    unzip -o /tmp/ast-grep.zip ast-grep -d /usr/local/bin && \
-    rm /tmp/ast-grep.zip && \
-    curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash && \
-    GCS_BUCKET="https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases" && \
-    PLATFORM="linux-$([ "$TARGETARCH" = "amd64" ] && echo "x64" || echo "arm64")" && \
-    CHECKSUM=$(curl -fsSL "$GCS_BUCKET/$CLAUDE_CODE_VERSION/manifest.json" | jq -r ".platforms[\"$PLATFORM\"].checksum") && \
-    curl -fsSL "$GCS_BUCKET/$CLAUDE_CODE_VERSION/$PLATFORM/claude" -o /usr/local/bin/claude && \
-    ACTUAL=$(sha256sum /usr/local/bin/claude | cut -d' ' -f1) && \
-    [ "$ACTUAL" = "$CHECKSUM" ] || { echo "Checksum verification failed"; exit 1; } && \
-    chmod +x /usr/local/bin/claude
+COPY scripts/install-tools.sh /tmp/install-tools.sh
+RUN TARGETARCH="${TARGETARCH}" \
+    ZELLIJ_VERSION="${ZELLIJ_VERSION}" \
+    LAZYGIT_VERSION="${LAZYGIT_VERSION}" \
+    FISH_VERSION="${FISH_VERSION}" \
+    ASTGREP_VERSION="${ASTGREP_VERSION}" \
+    CLAUDE_CODE_VERSION="${CLAUDE_CODE_VERSION}" \
+    sh /tmp/install-tools.sh && rm /tmp/install-tools.sh
 
 # Install global npm packages
 RUN npm install -g \
@@ -164,76 +155,13 @@ RUN zellij setup --generate-completion fish > /home/monk/.config/fish/completion
 # the greeting with fixed tool versions into a static file, then removed
 COPY scripts/cloister-banner-gen /home/monk/.local/bin/cloister-banner-gen
 
-# Create banner script (POSIX sh) - prints the pre-rendered banner; shown by
-# the shell configs so it greets the first terminal and every zellij pane
-RUN cat > /home/monk/.local/bin/cloister-banner << 'BANNEREOF'
-#!/bin/sh
-cat /home/monk/.local/share/cloister/banner
-BANNEREOF
+# Copy the runtime scripts: cloister-banner prints the pre-rendered banner
+# (invoked by the shell configs), cloister-start is the container entrypoint
+COPY scripts/cloister-banner scripts/cloister-start /home/monk/.local/bin/
 
-# Create entrypoint script (POSIX sh) - the banner is rendered by the shell
-# config (cloister-banner), so this just launches the default shell
-RUN cat > /home/monk/.local/bin/cloister-start << 'STARTEOF'
-#!/bin/sh
-# Cloister entrypoint
-exec /usr/local/bin/fish
-STARTEOF
-RUN chmod +x /home/monk/.local/bin/cloister-banner /home/monk/.local/bin/cloister-start
-
-# Configure fish shell
-RUN cat > /home/monk/.config/fish/config.fish << 'FISHEOF'
-# Cloister Fish Configuration
-set -gx PATH /home/monk/.local/bin /usr/local/bin /usr/bin /bin $PATH
-set -gx HOME /home/monk
-set -gx LANG C.UTF-8
-set -gx LC_ALL C.UTF-8
-set -gx VFOX_HOME /home/monk/.version-fox
-set -gx NPM_CONFIG_PREFIX /home/monk/.npm-global
-
-# Initialize vfox if available
-if type -q vfox
-    vfox activate fish | source
-end
-
-# Show the Cloister banner once per interactive terminal / zellij pane
-if status is-interactive
-    set -l __banner_marker /tmp/.cloister-banner-(tty | string replace -a / _)
-    if not test -e $__banner_marker
-        cloister-banner
-        touch $__banner_marker 2>/dev/null
-    end
-end
-FISHEOF
-
-# Configure zsh shell
-RUN cat > /home/monk/.zshrc << 'ZSHEOF'
-# Cloister Zsh Configuration
-export PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
-export HOME="/home/monk"
-export LANG=C.UTF-8
-export LC_ALL=C.UTF-8
-export VFOX_HOME="/home/monk/.version-fox"
-export NPM_CONFIG_PREFIX="/home/monk/.npm-global"
-
-# Initialize vfox if available
-if command -v vfox &> /dev/null; then
-    eval "$(vfox activate zsh)"
-fi
-
-# Zellij completions
-fpath=(~/.zsh-completions $fpath)
-autoload -Uz compinit && compinit
-
-# Show the Cloister banner once per interactive terminal / zellij pane
-if [[ -o interactive ]]; then
-    __banner_marker="/tmp/.cloister-banner-$(tty 2>/dev/null | tr / _)"
-    if [[ ! -e "$__banner_marker" ]]; then
-        cloister-banner
-        touch "$__banner_marker" 2>/dev/null
-    fi
-    unset __banner_marker
-fi
-ZSHEOF
+# Configure fish and zsh shells
+COPY config/config.fish /home/monk/.config/fish/config.fish
+COPY config/zshrc /home/monk/.zshrc
 
 # Create npm global directory for user installations
 RUN mkdir -p /home/monk/.npm-global
