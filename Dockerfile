@@ -1,6 +1,4 @@
-# =============================================================================
 # Stage 1: Builder - Prepare all artifacts
-# =============================================================================
 FROM cgr.dev/chainguard/node:latest-dev@sha256:7137fadb43a7cee4a01495749973f3c8c44a1d02319d9beb543bdb21cb6e874e AS builder
 
 USER root
@@ -38,9 +36,7 @@ ARG TYPESCRIPT_VERSION=6.0.3
 # renovate: datasource=npm depName=ts-node
 ARG TS_NODE_VERSION=10.9.2
 
-# Download and install the pinned tool binaries (see scripts/install-tools.sh).
-# The version ARGs are passed through explicitly so that bumping any of them
-# busts the build cache for this step.
+# Install the pinned tool binaries (scripts/install-tools.sh); version ARGs are passed through so bumping any of them busts the cache
 ARG TARGETARCH
 COPY scripts/install-tools.sh /tmp/install-tools.sh
 RUN TARGETARCH="${TARGETARCH}" \
@@ -59,9 +55,7 @@ RUN npm install -g \
     @types/node \
     && npm cache clean --force
 
-# =============================================================================
 # Stage 2: Final - Runtime image
-# =============================================================================
 FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim@sha256:b6e3a8825dfb232a6b962228f0b5cf98ee1d2b4263f62c2639f68887f4e634a2 AS final
 
 # Install runtime dependencies
@@ -151,12 +145,10 @@ RUN zellij setup --generate-completion fish > /home/monk/.config/fish/completion
     vfox completion fish > /home/monk/.config/fish/completions/vfox.fish && \
     vfox completion zsh > /home/monk/.zsh-completions/_vfox
 
-# Copy the banner generator; it is run once at build time (see below) to bake
-# the greeting with fixed tool versions into a static file, then removed
+# Copy the banner generator; run once at build time (below) to bake the greeting into a static file, then removed
 COPY scripts/cloister-banner-gen /home/monk/.local/bin/cloister-banner-gen
 
-# Copy the runtime scripts: cloister-banner prints the pre-rendered banner
-# (invoked by the shell configs), cloister-start is the container entrypoint
+# Copy runtime scripts: cloister-banner prints the pre-rendered banner, cloister-start is the entrypoint
 COPY scripts/cloister-banner scripts/cloister-start /home/monk/.local/bin/
 
 # Configure fish and zsh shells
@@ -178,8 +170,7 @@ ENV PATH="/home/monk/.local/bin:/usr/local/bin:/usr/bin:/bin" \
     NPM_CONFIG_PREFIX="/home/monk/.npm-global" \
     SHELL="/usr/local/bin/fish"
 
-# Pre-render the banner now that every tool is on PATH; versions are fixed at
-# build time, so shells cat this file instead of probing versions on startup
+# Pre-render the banner now that every tool is on PATH, so shells cat this file instead of probing versions on startup
 RUN mkdir -p /home/monk/.local/share/cloister && \
     sh /home/monk/.local/bin/cloister-banner-gen > /home/monk/.local/share/cloister/banner && \
     rm /home/monk/.local/bin/cloister-banner-gen
@@ -189,9 +180,7 @@ WORKDIR /workspace
 # Default command - entrypoint
 CMD ["/home/monk/.local/bin/cloister-start"]
 
-# =============================================================================
 # OCI Labels
-# =============================================================================
 LABEL org.opencontainers.image.title="Cloister" \
       org.opencontainers.image.description="Development environment with Fish shell, Node.js, TypeScript, Python, Claude Code CLI, git, and vfox" \
       org.opencontainers.image.vendor="Cloister" \
