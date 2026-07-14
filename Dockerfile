@@ -32,7 +32,7 @@ ARG ASTGREP_VERSION=0.44.1
 ARG CLAUDE_CODE_VERSION=2.1.207
 
 # renovate: datasource=npm depName=typescript
-ARG TYPESCRIPT_VERSION=6.0.3
+ARG TYPESCRIPT_VERSION=7.0.2
 # renovate: datasource=npm depName=ts-node
 ARG TS_NODE_VERSION=10.9.2
 
