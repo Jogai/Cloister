@@ -26,7 +26,7 @@ ARG LAZYGIT_VERSION=0.63.1
 ARG FISH_VERSION=4.8.1
 
 # renovate: datasource=github-releases depName=ast-grep/ast-grep
-ARG ASTGREP_VERSION=0.44.1
+ARG ASTGREP_VERSION=0.45.0
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
 ARG CLAUDE_CODE_VERSION=2.1.221
