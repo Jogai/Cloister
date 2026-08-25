@@ -17,7 +17,7 @@ RUN apk add --no-cache \
 ARG VFOX_VERSION=1.0.11
 
 # renovate: datasource=github-releases depName=zellij-org/zellij
-ARG ZELLIJ_VERSION=0.44.3
+ARG ZELLIJ_VERSION=0.45.0
 
 # renovate: datasource=github-releases depName=jesseduffield/lazygit
 ARG LAZYGIT_VERSION=0.64.0
