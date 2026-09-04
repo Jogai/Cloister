@@ -1,6 +1,7 @@
 #!/bin/sh
 # Download and install the pinned tool binaries into /usr/local/bin:
-# zellij, lazygit, fish, ast-grep, vfox, and claude (checksum-verified).
+# zellij, lazygit, fish, ast-grep, rtk (checksum-verified), vfox, and claude
+# (checksum-verified).
 #
 # Versions are provided by the Dockerfile build ARGs, passed in as environment
 # variables. TARGETARCH selects the architecture (amd64 / arm64).
@@ -26,6 +27,17 @@ curl -fsSL "https://github.com/fish-shell/fish-shell/releases/download/${FISH_VE
 curl -fsSL "https://github.com/ast-grep/ast-grep/releases/download/${ASTGREP_VERSION}/app-${AST_ARCH}-unknown-linux-gnu.zip" -o /tmp/ast-grep.zip
 unzip -o /tmp/ast-grep.zip ast-grep -d /usr/local/bin
 rm /tmp/ast-grep.zip
+
+# rtk (x86_64 ships a musl build, aarch64 a gnu build; verify against the release checksums)
+RTK_TARGET=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64-unknown-linux-musl" || echo "aarch64-unknown-linux-gnu")
+RTK_ASSET="rtk-${RTK_TARGET}.tar.gz"
+RTK_URL="https://github.com/rtk-ai/rtk/releases/download/v${RTK_VERSION}"
+curl -fsSL "$RTK_URL/$RTK_ASSET" -o "/tmp/$RTK_ASSET"
+RTK_EXPECTED=$(curl -fsSL "$RTK_URL/checksums.txt" | grep " $RTK_ASSET\$" | cut -d' ' -f1)
+RTK_ACTUAL=$(sha256sum "/tmp/$RTK_ASSET" | cut -d' ' -f1)
+[ -n "$RTK_EXPECTED" ] && [ "$RTK_ACTUAL" = "$RTK_EXPECTED" ] || { echo "rtk checksum verification failed"; exit 1; }
+tar -xz -C /usr/local/bin -f "/tmp/$RTK_ASSET" rtk
+rm "/tmp/$RTK_ASSET"
 
 # vfox
 curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash

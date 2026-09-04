@@ -14,7 +14,7 @@ NC='\033[0m'
 printf "${CYAN}🏛  Cloister Development Environment${NC}\n"
 
 # Print tool versions
-for tool in "Claude:claude" "Git:git" "Fish:fish" "Zsh:zsh" "Zellij:zellij" "Python:python3" "uv:uv" "Node.js:node" "npm:npm" "TypeScript:tsc" "vfox:vfox" "ast-grep:ast-grep"; do
+for tool in "Claude:claude" "Git:git" "Fish:fish" "Zsh:zsh" "Zellij:zellij" "Python:python3" "uv:uv" "Node.js:node" "npm:npm" "TypeScript:tsc" "vfox:vfox" "ast-grep:ast-grep" "rtk:rtk"; do
     name="${tool%%:*}"
     cmd="${tool#*:}"
     version=$($cmd --version 2>/dev/null | sed 's/^[^0-9]*//' | head -n1)
@@ -32,6 +32,11 @@ echo "   zellij   - Split panes, run Claude, fish, and zsh all at once"
 echo ""
 printf "${GRAY}AI assistant:${NC}\n"
 echo "   claude --dangerously-skip-permissions"
+echo ""
+printf "${GRAY}Token-saving output filter:${NC}\n"
+echo "   rtk compacts command output before it reaches Claude. Hook it in once with:"
+echo "   rtk init -g    (global, persists via the mounted ~/.claude)"
+echo "   rtk init       (this project only)"
 echo ""
 printf "${GRAY}Browser automation:${NC}\n"
 echo "   Chromium libraries are preinstalled. Fetch the browser with:"

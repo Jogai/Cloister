@@ -28,6 +28,9 @@ ARG FISH_VERSION=4.9.1
 # renovate: datasource=github-releases depName=ast-grep/ast-grep
 ARG ASTGREP_VERSION=0.45.3
 
+# renovate: datasource=github-releases depName=rtk-ai/rtk
+ARG RTK_VERSION=0.48.0
+
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
 ARG CLAUDE_CODE_VERSION=2.1.260
 
@@ -44,6 +47,7 @@ RUN TARGETARCH="${TARGETARCH}" \
     LAZYGIT_VERSION="${LAZYGIT_VERSION}" \
     FISH_VERSION="${FISH_VERSION}" \
     ASTGREP_VERSION="${ASTGREP_VERSION}" \
+    RTK_VERSION="${RTK_VERSION}" \
     CLAUDE_CODE_VERSION="${CLAUDE_CODE_VERSION}" \
     sh /tmp/install-tools.sh && rm /tmp/install-tools.sh
 
@@ -114,8 +118,8 @@ RUN useradd -m -u 1000 -d /home/monk -s /usr/local/bin/fish monk && \
     mkdir -p /workspace && \
     chown monk:monk /workspace
 
-# Copy vfox, zellij, lazygit, fish, claude, and ast-grep from builder
-COPY --from=builder /usr/local/bin/vfox /usr/local/bin/zellij /usr/local/bin/lazygit /usr/local/bin/fish /usr/local/bin/claude /usr/local/bin/ast-grep /usr/local/bin/
+# Copy vfox, zellij, lazygit, fish, claude, ast-grep, and rtk from builder
+COPY --from=builder /usr/local/bin/vfox /usr/local/bin/zellij /usr/local/bin/lazygit /usr/local/bin/fish /usr/local/bin/claude /usr/local/bin/ast-grep /usr/local/bin/rtk /usr/local/bin/
 
 # Copy global npm packages from builder and create symlinks
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
