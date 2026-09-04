@@ -18,6 +18,8 @@ A Docker image for development environments featuring Python, Node.js, TypeScrip
 - 🦥 **lazygit** - Terminal UI for git
 - 🦊 **vfox** - Universal version manager
 - 🔍 **ripgrep, fd, fzf** - Fast search tools
+- 🌳 **ast-grep** - Structural code search and rewriting
+- 🪶 **rtk** - CLI proxy that filters and compacts command output before it reaches the LLM context
 
 ## 🚀 Quick Start
 
@@ -97,6 +99,8 @@ docker buildx build --platform linux/amd64 -t cloister .
 | ts-node | npm |
 | lazygit | GitHub release |
 | vfox | GitHub release |
+| ast-grep | GitHub release |
+| rtk | GitHub release |
 
 ## ⚙️ Environment Variables
 

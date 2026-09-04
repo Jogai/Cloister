@@ -248,6 +248,11 @@ jobs:
           echo "Testing Claude CLI..."
           docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest claude --version || echo "Claude CLI installed (requires API key for full functionality)"
 
+      - name: Test rtk
+        run: |
+          echo "Testing rtk..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest rtk --version
+
       - name: Test Fish shell
         run: |
           echo "Testing Fish shell..."
@@ -275,5 +280,6 @@ jobs:
           echo "| git | OK |" >> $GITHUB_STEP_SUMMARY
           echo "| vfox | OK |" >> $GITHUB_STEP_SUMMARY
           echo "| Claude CLI | OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| rtk | OK |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "All tool verification tests completed successfully." >> $GITHUB_STEP_SUMMARY
