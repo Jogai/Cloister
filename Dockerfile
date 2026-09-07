@@ -14,7 +14,7 @@ RUN apk add --no-cache \
     xz
 
 # renovate: datasource=github-releases depName=version-fox/vfox
-ARG VFOX_VERSION=1.0.11
+ARG VFOX_VERSION=1.0.12
 
 # renovate: datasource=github-releases depName=zellij-org/zellij
 ARG ZELLIJ_VERSION=0.45.1
