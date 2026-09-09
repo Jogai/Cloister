@@ -23,7 +23,7 @@ ARG ZELLIJ_VERSION=0.45.1
 ARG LAZYGIT_VERSION=0.65.0
 
 # renovate: datasource=github-releases depName=fish-shell/fish-shell
-ARG FISH_VERSION=4.9.2
+ARG FISH_VERSION=4.9.3
 
 # renovate: datasource=github-releases depName=ast-grep/ast-grep
 ARG ASTGREP_VERSION=0.45.3
