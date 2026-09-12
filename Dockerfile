@@ -29,7 +29,7 @@ ARG FISH_VERSION=4.9.3
 ARG ASTGREP_VERSION=0.45.3
 
 # renovate: datasource=github-releases depName=rtk-ai/rtk
-ARG RTK_VERSION=0.48.0
+ARG RTK_VERSION=v0.49.0
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
 ARG CLAUDE_CODE_VERSION=2.1.269
