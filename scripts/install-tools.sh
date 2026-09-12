@@ -9,6 +9,14 @@ set -e
 
 mkdir -p /usr/local/bin
 
+# Tolerate a leading "v" in any version (e.g. a Renovate bump that keeps the tag prefix)
+ZELLIJ_VERSION="${ZELLIJ_VERSION#v}"
+LAZYGIT_VERSION="${LAZYGIT_VERSION#v}"
+FISH_VERSION="${FISH_VERSION#v}"
+ASTGREP_VERSION="${ASTGREP_VERSION#v}"
+RTK_VERSION="${RTK_VERSION#v}"
+CLAUDE_CODE_VERSION="${CLAUDE_CODE_VERSION#v}"
+
 ARCH=$(uname -m)
 LAZYGIT_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "arm64")
 FISH_ARCH=$([ "$TARGETARCH" = "amd64" ] && echo "x86_64" || echo "aarch64")
