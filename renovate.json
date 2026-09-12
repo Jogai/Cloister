@@ -45,14 +45,15 @@
     },
     {
       "customType": "regex",
-      "description": "Update GitHub releases versions in Dockerfile ARGs",
+      "description": "Update GitHub releases versions in Dockerfile ARGs (bare semver, strips any v prefix and skips pre-release tags)",
       "managerFilePatterns": [
         "/^Dockerfile$/"
       ],
       "matchStrings": [
         "# renovate: datasource=github-releases depName=(?<depName>[^\\s]+)\\nARG [A-Z_]+_VERSION=(?<currentValue>\\S+)"
       ],
-      "datasourceTemplate": "github-releases"
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>\\d+\\.\\d+\\.\\d+)$"
     }
   ]
 }
