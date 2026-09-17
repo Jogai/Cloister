@@ -1,5 +1,5 @@
 # Stage 1: Builder - Prepare all artifacts
-FROM cgr.dev/chainguard/node:latest-dev@sha256:956751e78ef828ea4a76e2952250bd4bb6761c4a11ac1b34bc74353ee29b24a5 AS builder
+FROM cgr.dev/chainguard/node:latest-dev@sha256:db89720470121d6f06954ac5e38bf0d71c55354bdcdabc0a616c7b01454e2fca AS builder
 
 USER root
 
