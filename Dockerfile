@@ -32,7 +32,7 @@ ARG ASTGREP_VERSION=0.45.3
 ARG RTK_VERSION=0.49.0
 
 # renovate: datasource=npm depName=@anthropic-ai/claude-code
-ARG CLAUDE_CODE_VERSION=2.1.273
+ARG CLAUDE_CODE_VERSION=2.1.274
 
 # renovate: datasource=npm depName=typescript
 ARG TYPESCRIPT_VERSION=7.0.2
