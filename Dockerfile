@@ -60,7 +60,7 @@ RUN npm install -g \
     && npm cache clean --force
 
 # Stage 2: Final - Runtime image
-FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim@sha256:112f89760bd54b63c84d140151ea5f3d849278e54f6f939f2c40a57f3e33d895 AS final
+FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim@sha256:02f7e4ef3aeb9e5bf2c4ab7476b622c9ec9bfe62c9ded95074d82f99c50c1471 AS final
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
