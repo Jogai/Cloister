@@ -25,6 +25,13 @@
       "matchPackageNames": [
         "/^cgr.dev/chainguard//"
       ]
+    },
+    {
+      "description": "Wait for release assets to finish uploading before updating",
+      "matchDatasources": [
+        "github-releases"
+      ],
+      "minimumReleaseAge": "12 hours"
     }
   ],
   "customManagers": [
