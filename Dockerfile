@@ -26,7 +26,7 @@ ARG LAZYGIT_VERSION=0.66.2
 ARG FISH_VERSION=4.9.3
 
 # renovate: datasource=github-releases depName=ast-grep/ast-grep
-ARG ASTGREP_VERSION=0.51.0
+ARG ASTGREP_VERSION=0.51.1
 
 # renovate: datasource=github-releases depName=rtk-ai/rtk
 ARG RTK_VERSION=1.1.0
